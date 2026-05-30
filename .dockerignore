@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/*.user
+**/.DS_Store
+**/.git/
+**/.gitignore
+**/node_modules/
+ScanGo.Api.Tests/
+README.md
+*.md

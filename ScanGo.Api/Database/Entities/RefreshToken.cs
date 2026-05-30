@@ -1,0 +1,15 @@
+namespace ScanGo.Api.Database.Entities;
+
+public class RefreshToken
+{
+    public Guid Id { get; set; }
+    public Guid UserId { get; set; }
+    public string TokenHash { get; set; } = "";    // sha256 hex (64 chars)
+    public string? Device { get; set; }
+    public string? Platform { get; set; }            // "web" | "mobile"
+    public DateTime ExpiresAt { get; set; }
+    public DateTime? RevokedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+
+    public User User { get; set; } = null!;
+}

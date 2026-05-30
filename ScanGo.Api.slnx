@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ScanGo.Api.Tests/ScanGo.Api.Tests.csproj" />
+  <Project Path="ScanGo.Api/ScanGo.Api.csproj" />
+</Solution>

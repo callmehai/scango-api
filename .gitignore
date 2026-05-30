@@ -1,0 +1,11 @@
+bin/
+obj/
+*.user
+.vs/
+.idea/
+appsettings.*.local.json
+
+# Contains real secrets (Gemini / OCR.Space / DB / JwtSecret) — never commit.
+# Use appsettings.Development.json.example as the tracked template.
+appsettings.Development.json
+appsettings.Production.json

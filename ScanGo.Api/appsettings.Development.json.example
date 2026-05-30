@@ -1,0 +1,27 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "Postgres": "Host=localhost;Port=5433;Database=scango;Username=scango;Password=scango"
+  },
+  "Auth": {
+    "JwtSecret": "CHANGE_ME_dev_only_secret_min_32_chars_long_please",
+    "JwtIssuer": "scango-api-dev",
+    "JwtAudience": "scango",
+    "AccessTokenMinutes": 15,
+    "RefreshTokenDays": 30
+  },
+  "Ocr": {
+    "Mock": true,
+    "OcrSpaceApiKey": "YOUR_OCR_SPACE_API_KEY"
+  },
+  "Ai": {
+    "Mock": true,
+    "GeminiApiKey": "YOUR_GEMINI_API_KEY",
+    "GeminiModel": "gemini-2.0-flash"
+  }
+}
