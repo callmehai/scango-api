@@ -67,10 +67,14 @@ builder.Services.Configure<AiOptions>(
 builder.Services.AddDbContext<ScanGoDbContext>((sp, opts) =>
 {
     var cfg = sp.GetRequiredService<IConfiguration>();
-    var connStr =
-        cfg.GetConnectionString("Postgres")
-        ?? Environment.GetEnvironmentVariable("DATABASE_URL")
-        ?? throw new InvalidOperationException(
+    // NB: check IsNullOrWhiteSpace, not ?? — appsettings.json ships an empty
+    // "ConnectionStrings:Postgres" placeholder, which is non-null, so a plain
+    // ?? would swallow it and never fall through to the DATABASE_URL env var.
+    var connStr = cfg.GetConnectionString("Postgres");
+    if (string.IsNullOrWhiteSpace(connStr))
+        connStr = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (string.IsNullOrWhiteSpace(connStr))
+        throw new InvalidOperationException(
             "Connection string 'Postgres' (or DATABASE_URL env) is required.");
     opts.UseNpgsql(connStr).UseSnakeCaseNamingConvention();
 });
