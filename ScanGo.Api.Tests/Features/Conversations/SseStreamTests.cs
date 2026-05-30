@@ -87,12 +87,12 @@ public class SseStreamTests(AuthApiFixture fx)
 
         var deltas = ParseSse(raw);
         deltas.Should().NotBeEmpty();
-        string.Concat(deltas).Should().Contain("Head & Shoulders");
+        string.Concat(deltas).Should().Contain("GIẢ LẬP");
 
         // Verify persisted state
         await using var db = fx.CreateDbContext();
         var convo = await db.Conversations.FirstAsync(c => c.Id == created.Id);
-        convo.Title.Should().Be("Dầu gội Head & Shoulders trị gàu");
+        convo.Title.Should().Be("[DEMO] Phản hồi giả lập");
 
         var assistant = await db.Messages
             .Where(m => m.ConversationId == created.Id && m.Role == "assistant")

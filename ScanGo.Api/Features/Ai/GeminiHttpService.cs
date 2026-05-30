@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using ScanGo.Api.Common;
 
 namespace ScanGo.Api.Features.Ai;
 
@@ -12,6 +13,7 @@ namespace ScanGo.Api.Features.Ai;
 public class GeminiHttpService(
     HttpClient http,
     IOptions<AiOptions> options,
+    RuntimeSettings settings,
     ILogger<GeminiHttpService> log) : IGeminiService
 {
     private readonly AiOptions _opts = options.Value;
@@ -25,7 +27,7 @@ public class GeminiHttpService(
             throw new InvalidOperationException("Ai:GeminiApiKey is not set.");
 
         var url =
-            $"https://generativelanguage.googleapis.com/v1beta/models/{_opts.GeminiModel}" +
+            $"https://generativelanguage.googleapis.com/v1beta/models/{settings.Current.GeminiModel}" +
             $":streamGenerateContent?alt=sse&key={_opts.GeminiApiKey}";
 
         var payload = new

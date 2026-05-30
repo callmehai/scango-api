@@ -17,6 +17,7 @@ public class ScanGoDbContext(DbContextOptions<ScanGoDbContext> options) : DbCont
     public DbSet<PaymentOrder> PaymentOrders => Set<PaymentOrder>();
     public DbSet<AuditLogEntry> AuditLog => Set<AuditLogEntry>();
     public DbSet<DeletionRequest> DeletionRequests => Set<DeletionRequest>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -36,6 +37,17 @@ public class ScanGoDbContext(DbContextOptions<ScanGoDbContext> options) : DbCont
         ConfigurePaymentOrders(b);
         ConfigureAuditLog(b);
         ConfigureDeletionRequests(b);
+        ConfigureAppSettings(b);
+    }
+
+    private static void ConfigureAppSettings(ModelBuilder b)
+    {
+        b.Entity<AppSetting>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.GeminiModel).HasMaxLength(64).IsRequired();
+            e.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
+        });
     }
 
     private static void ConfigureUsers(ModelBuilder b)

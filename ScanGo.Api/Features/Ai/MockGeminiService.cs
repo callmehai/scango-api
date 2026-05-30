@@ -15,11 +15,11 @@ public class MockGeminiService : IGeminiService
     {
         var canned = new[]
         {
-            "TITLE: Dầu gội Head & Shoulders trị gàu\n",
+            "TITLE: [DEMO] Phản hồi giả lập\n",
             "\n",
-            "Đây là sản phẩm dầu gội ", "trị gàu của Head & Shoulders. ",
-            "Thành phần chính là Pyrithione zinc (1%) ",
-            "có tác dụng kháng nấm và giảm gàu.",
+            "🔧 Đây là phản hồi ", "GIẢ LẬP (Mock AI đang bật) — ",
+            "không phải kết quả thật từ Gemini nên nội dung không liên quan tới ảnh. ",
+            "Tắt \"Mock AI\" trong trang Quản trị để dùng AI thật.",
         };
 
         foreach (var chunk in canned)

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ScanGo.Api.Common;
 using ScanGo.Api.Database;
+using ScanGo.Api.Database.Entities;
 using ScanGo.Api.Features.Ai;
 using ScanGo.Api.Features.Auth;
 using ScanGo.Api.Features.Conversations;
@@ -100,24 +101,16 @@ builder.Services.AddSingleton<IObjectStorage>(sp =>
 });
 builder.Services.AddScoped<IConversationService, ConversationService>();
 
-// OCR + Gemini — pick mock or real impl based on config flag at startup.
-// We register both impls and resolve via factory so swapping is a config change.
+// OCR + Gemini — both mock and real impls are registered; a per-request
+// dispatcher picks which to use based on the live RuntimeSettings flags, so an
+// admin can toggle mock on/off (and switch model) at runtime without a restart.
+builder.Services.AddSingleton<RuntimeSettings>();
 builder.Services.AddHttpClient<OcrSpaceService>();
 builder.Services.AddHttpClient<GeminiHttpService>();
-builder.Services.AddScoped<IOcrService>(sp =>
-{
-    var opts = sp.GetRequiredService<IOptions<OcrOptions>>().Value;
-    return opts.Mock || string.IsNullOrWhiteSpace(opts.OcrSpaceApiKey)
-        ? new MockOcrService()
-        : sp.GetRequiredService<OcrSpaceService>();
-});
-builder.Services.AddScoped<IGeminiService>(sp =>
-{
-    var opts = sp.GetRequiredService<IOptions<AiOptions>>().Value;
-    return opts.Mock || string.IsNullOrWhiteSpace(opts.GeminiApiKey)
-        ? new MockGeminiService()
-        : sp.GetRequiredService<GeminiHttpService>();
-});
+builder.Services.AddScoped<MockOcrService>();
+builder.Services.AddScoped<MockGeminiService>();
+builder.Services.AddScoped<IOcrService, OcrServiceDispatcher>();
+builder.Services.AddScoped<IGeminiService, GeminiServiceDispatcher>();
 
 // Email — DevEmailService logs + remembers in memory. Swap for ResendEmailService later.
 builder.Services.AddScoped<IEmailService, DevEmailService>();
@@ -238,6 +231,34 @@ if (autoMigrate)
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ScanGoDbContext>();
     await db.Database.MigrateAsync();
+}
+
+// Load admin-editable runtime settings into the in-memory cache. The row is
+// seeded from env config on first run; thereafter the DB row (admin-controlled)
+// is the source of truth, so changing env later won't override admin choices.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ScanGoDbContext>();
+    var runtime = scope.ServiceProvider.GetRequiredService<RuntimeSettings>();
+    var row = await db.AppSettings.FindAsync(AppSetting.SingletonId);
+    if (row is null)
+    {
+        var ai = scope.ServiceProvider.GetRequiredService<IOptions<AiOptions>>().Value;
+        var ocr = scope.ServiceProvider.GetRequiredService<IOptions<OcrOptions>>().Value;
+        row = new AppSetting
+        {
+            Id = AppSetting.SingletonId,
+            GeminiModel = string.IsNullOrWhiteSpace(ai.GeminiModel)
+                ? "gemini-2.5-flash-lite"
+                : ai.GeminiModel,
+            AiMock = ai.Mock || string.IsNullOrWhiteSpace(ai.GeminiApiKey),
+            OcrMock = ocr.Mock || string.IsNullOrWhiteSpace(ocr.OcrSpaceApiKey),
+            UpdatedAt = DateTime.UtcNow,
+        };
+        db.AppSettings.Add(row);
+        await db.SaveChangesAsync();
+    }
+    runtime.Set(new SettingsSnapshot(row.GeminiModel, row.AiMock, row.OcrMock));
 }
 
 // ============================================================================
