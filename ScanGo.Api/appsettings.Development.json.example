@@ -23,5 +23,12 @@
     "Mock": true,
     "GeminiApiKey": "YOUR_GEMINI_API_KEY",
     "GeminiModel": "gemini-2.0-flash"
+  },
+  "R2": {
+    "_comment": "Leave blank to use local filesystem storage. Fill all 4 to use Cloudflare R2.",
+    "AccountId": "",
+    "AccessKeyId": "",
+    "SecretAccessKey": "",
+    "Bucket": ""
   }
 }

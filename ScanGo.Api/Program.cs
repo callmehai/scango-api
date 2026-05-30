@@ -55,6 +55,8 @@ builder.Services.Configure<GoogleAuthOptions>(
     builder.Configuration.GetSection(GoogleAuthOptions.SectionName));
 builder.Services.Configure<LocalStorageOptions>(
     builder.Configuration.GetSection(LocalStorageOptions.SectionName));
+builder.Services.Configure<R2Options>(
+    builder.Configuration.GetSection(R2Options.SectionName));
 builder.Services.Configure<OcrOptions>(
     builder.Configuration.GetSection(OcrOptions.SectionName));
 builder.Services.Configure<AiOptions>(
@@ -82,7 +84,16 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IGoogleTokenVerifier, GoogleTokenVerifier>();
 builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 builder.Services.AddScoped<IAuditLogger, AuditLogger>();
-builder.Services.AddSingleton<IObjectStorage, LocalObjectStorage>();
+// Image storage — use Cloudflare R2 when the R2__* env vars are set, else fall
+// back to the local filesystem (dev/test). Both implement IObjectStorage so the
+// rest of the app is unaware which backend is active.
+builder.Services.AddSingleton<IObjectStorage>(sp =>
+{
+    var r2 = sp.GetRequiredService<IOptions<R2Options>>().Value;
+    return r2.IsConfigured
+        ? ActivatorUtilities.CreateInstance<R2ObjectStorage>(sp)
+        : ActivatorUtilities.CreateInstance<LocalObjectStorage>(sp);
+});
 builder.Services.AddScoped<IConversationService, ConversationService>();
 
 // OCR + Gemini — pick mock or real impl based on config flag at startup.
