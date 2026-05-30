@@ -10,3 +10,5 @@
 ScanGo.Api.Tests/
 README.md
 *.md
+**/.env
+**/.env.*

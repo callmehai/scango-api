@@ -9,3 +9,7 @@ appsettings.*.local.json
 # Use appsettings.Development.json.example as the tracked template.
 appsettings.Development.json
 appsettings.Production.json
+
+# Local env file with real secrets — never commit.
+.env
+.env.*
