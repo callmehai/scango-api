@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ScanGo.Api.Common;
 using ScanGo.Api.Database;
 using ScanGo.Api.Database.Entities;
+using ScanGo.Api.Features.Billing;
 
 namespace ScanGo.Api.Features.Auth;
 
@@ -148,6 +149,11 @@ public class AuthService(
         {
             return AuthResult.Fail(AuthErrorCode.AccountDeleted, "Tài khoản không khả dụng.");
         }
+
+        // Lazily downgrade an expired paid plan so the freshly-issued token
+        // carries the correct (Free) plan claim — don't wait for the hourly sweep.
+        if (Plans.EnforceExpiry(user, DateTime.UtcNow))
+            await db.SaveChangesAsync(ct);
 
         var access = jwt.Issue(user);
         return AuthResult.Ok(BuildResponse(

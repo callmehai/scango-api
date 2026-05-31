@@ -65,8 +65,9 @@ public static class PeriodKinds
 {
     public const string Weekly = "weekly";
     public const string Monthly = "monthly";
+    public const string Rolling7 = "rolling_7d";   // per-user 7-day window from signup
 
-    public static readonly string[] All = [Weekly, Monthly];
+    public static readonly string[] All = [Weekly, Monthly, Rolling7];
 }
 
 public static class CreditLedgerReasons

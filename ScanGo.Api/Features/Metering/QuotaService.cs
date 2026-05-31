@@ -40,10 +40,20 @@ public class QuotaService(ScanGoDbContext db, RuntimeSettings settings) : IQuota
         return role != UserRoles.Admin && role != UserRoles.Tester;
     }
 
+    // Quota resets on a rolling 7-day cycle anchored at the user's signup date,
+    // so every user gets a full 7 days from when they joined / activated — not a
+    // shared calendar week. Falls back to "now" if the user can't be found.
+    private async Task<DateTime> AnchorAsync(Guid userId, CancellationToken ct) =>
+        await db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => (DateTime?)u.CreatedAt)
+            .FirstOrDefaultAsync(ct) ?? DateTime.UtcNow;
+
     public async Task<QuotaStatus> GetStatusAsync(
         Guid userId, string plan, string role, CancellationToken ct)
     {
-        var (key, _, endUtc) = QuotaPeriod.CurrentWeek(DateTime.UtcNow);
+        var anchor = await AnchorAsync(userId, ct);
+        var (key, _, endUtc) = QuotaPeriod.CurrentRolling(DateTime.UtcNow, anchor);
         var s = await db.UsageSummaries.AsNoTracking()
             .FirstOrDefaultAsync(x => x.UserId == userId && x.PeriodKey == key, ct);
         var cfg = settings.Current;
@@ -59,7 +69,8 @@ public class QuotaService(ScanGoDbContext db, RuntimeSettings settings) : IQuota
         Guid userId, string plan, string role, string kind, CancellationToken ct)
     {
         var now = DateTime.UtcNow;
-        var (key, start, end) = QuotaPeriod.CurrentWeek(now);
+        var anchor = await AnchorAsync(userId, ct);
+        var (key, start, end) = QuotaPeriod.CurrentRolling(now, anchor);
         var s = await db.UsageSummaries
             .FirstOrDefaultAsync(x => x.UserId == userId && x.PeriodKey == key, ct);
         if (s is null)
@@ -68,7 +79,7 @@ public class QuotaService(ScanGoDbContext db, RuntimeSettings settings) : IQuota
             {
                 UserId = userId,
                 PeriodKey = key,
-                PeriodKind = PeriodKinds.Weekly,
+                PeriodKind = PeriodKinds.Rolling7,
                 PeriodStart = start,
                 PeriodEnd = end,
                 UpdatedAt = now,

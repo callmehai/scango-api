@@ -23,4 +23,36 @@ public static class Plans
 
     public static PlanInfo? Find(string code) =>
         All.FirstOrDefault(p => p.Code == code);
+
+    /// <summary>
+    /// When does a plan activated at <paramref name="from"/> expire?
+    /// Returns null for plans without a duration (Free, Unlimited) — they never
+    /// expire. Paid tiers expire <c>DurationDays</c> after activation.
+    /// </summary>
+    public static DateTime? ExpiryFrom(string code, DateTime from)
+    {
+        var info = Find(code);
+        return info?.DurationDays is int days ? from.AddDays(days) : null;
+    }
+
+    /// <summary>
+    /// If <paramref name="user"/>'s paid plan has expired (PlanExpiresAt in the
+    /// past), downgrade it to Free in-place and return true. Caller is
+    /// responsible for persisting (SaveChanges). Safe to call on any user —
+    /// no-op for plans without an expiry. This is the lazy counterpart to the
+    /// hourly background sweep, so an expired plan is corrected on the very next
+    /// token refresh / usage read instead of waiting up to an hour.
+    /// </summary>
+    public static bool EnforceExpiry(Database.Entities.User user, DateTime now)
+    {
+        if (user.PlanExpiresAt is { } exp
+            && exp <= now
+            && user.Plan != PlanCodes.Free)
+        {
+            user.Plan = PlanCodes.Free;
+            user.PlanExpiresAt = null;
+            return true;
+        }
+        return false;
+    }
 }

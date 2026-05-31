@@ -44,7 +44,7 @@ public class AdminUsersController(
             .ToListAsync(ct);
 
         var ids = users.Select(u => u.Id).ToList();
-        var (periodKey, _, resetAt) = QuotaPeriod.CurrentWeek(DateTime.UtcNow);
+        var now = DateTime.UtcNow;
 
         var convCounts = await db.Conversations.AsNoTracking()
             .Where(c => ids.Contains(c.UserId))
@@ -52,8 +52,12 @@ public class AdminUsersController(
             .Select(g => new { UserId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.UserId, x => x.Count, ct);
 
+        // Quota is a per-user rolling 7-day window (anchored at signup), so each
+        // user has their own period key. The currently-open period is the one
+        // whose window still contains `now` — grab those in one query.
         var summaries = await db.UsageSummaries.AsNoTracking()
-            .Where(s => ids.Contains(s.UserId) && s.PeriodKey == periodKey)
+            .Where(s => ids.Contains(s.UserId)
+                        && s.PeriodStart <= now && s.PeriodEnd > now)
             .ToDictionaryAsync(s => s.UserId, ct);
 
         var tokenSums = await db.UsageEvents.AsNoTracking()
@@ -85,14 +89,14 @@ public class AdminUsersController(
                 conversationCount = convCounts.GetValueOrDefault(u.Id, 0),
                 limited = quota.IsLimited(u.Plan, u.Role),
                 scansUsed = s?.ScanCount ?? 0,
-                scansLimit = cfg.FreeWeeklyScans,
+                scansLimit = PlanQuotas.Resolve(u.Plan, cfg.FreeWeeklyScans, cfg.FreeWeeklyAsks).WeeklyScans,
                 asksUsed = s?.AskCount ?? 0,
-                asksLimit = cfg.FreeWeeklyAsks,
+                asksLimit = PlanQuotas.Resolve(u.Plan, cfg.FreeWeeklyScans, cfg.FreeWeeklyAsks).WeeklyAsks,
                 totalTokens = tokenSums.GetValueOrDefault(u.Id, 0L),
             };
         });
 
-        return Ok(new { items, total, skip, limit, periodKey, resetAtUtc = resetAt });
+        return Ok(new { items, total, skip, limit });
     }
 
     [HttpGet("metrics")]

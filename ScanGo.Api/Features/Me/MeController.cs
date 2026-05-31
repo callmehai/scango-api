@@ -5,6 +5,7 @@ using ScanGo.Api.Common;
 using ScanGo.Api.Database;
 using ScanGo.Api.Database.Entities;
 using ScanGo.Api.Features.Auth;
+using ScanGo.Api.Features.Billing;
 using ScanGo.Api.Features.Metering;
 
 namespace ScanGo.Api.Features.Me;
@@ -22,8 +23,19 @@ public class MeController(
     public async Task<IActionResult> Usage(CancellationToken ct)
     {
         var userId = User.RequireUserId();
-        var plan = User.Plan() ?? PlanCodes.Free;
         var role = User.Role() ?? UserRoles.User;
+
+        // Resolve the EFFECTIVE plan from the DB (not the possibly-stale JWT
+        // claim) and lazily downgrade if it has expired, so the quota shown is
+        // always accurate even before the next token refresh.
+        var dbUser = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var plan = dbUser?.Plan ?? User.Plan() ?? PlanCodes.Free;
+        if (dbUser is not null && Plans.EnforceExpiry(dbUser, DateTime.UtcNow))
+        {
+            await db.SaveChangesAsync(ct);
+            plan = dbUser.Plan;
+        }
+
         var s = await quota.GetStatusAsync(userId, plan, role, ct);
         return Ok(new
         {

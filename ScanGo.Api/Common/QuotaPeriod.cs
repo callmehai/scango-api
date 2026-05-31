@@ -33,4 +33,29 @@ public static class QuotaPeriod
             TimeZoneInfo.ConvertTimeToUtc(weekStartLocal, Vn),
             TimeZoneInfo.ConvertTimeToUtc(weekEndLocal, Vn));
     }
+
+    /// <summary>Length of one rolling quota period.</summary>
+    public static readonly TimeSpan RollingLength = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// Rolling per-user quota period: a fixed 7-day window anchored at
+    /// <paramref name="anchorUtc"/> (the user's signup time). Period N covers
+    /// [anchor + 7N, anchor + 7(N+1)); quota resets the moment one window ends,
+    /// so every user gets a full 7 days from when they joined — not a shared
+    /// calendar week. Key "r7-0042" = the 43rd 7-day window since signup.
+    /// No cron needed: the key changes automatically when the window rolls over.
+    /// </summary>
+    public static (string Key, DateTime StartUtc, DateTime EndUtc) CurrentRolling(
+        DateTime utcNow, DateTime anchorUtc)
+    {
+        anchorUtc = DateTime.SpecifyKind(anchorUtc, DateTimeKind.Utc);
+        var elapsed = utcNow - anchorUtc;
+        var index = elapsed <= TimeSpan.Zero
+            ? 0L
+            : elapsed.Ticks / RollingLength.Ticks;
+
+        var startUtc = anchorUtc.AddTicks(index * RollingLength.Ticks);
+        var endUtc = startUtc.Add(RollingLength);
+        return ($"r7-{index:D4}", startUtc, endUtc);
+    }
 }
