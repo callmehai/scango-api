@@ -13,5 +13,10 @@ public class AppSetting
     public string GeminiModel { get; set; } = "gemini-2.5-flash-lite";
     public bool AiMock { get; set; } = true;
     public bool OcrMock { get; set; } = true;
+
+    // Free-tier quota per ISO week (admin-editable).
+    public int FreeWeeklyScans { get; set; } = 3;
+    public int FreeWeeklyAsks { get; set; } = 5;
+
     public DateTime UpdatedAt { get; set; }
 }

@@ -50,6 +50,10 @@ public class AuthApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
                 // required for them to be deterministic. Overrides appsettings.Development.json.
                 ["Ai:Mock"] = "true",
                 ["Ocr:Mock"] = "true",
+                // Effectively unlimited free quota in tests so flows that create
+                // many conversations aren't blocked by the 429 quota gate.
+                ["Quota:FreeWeeklyScans"] = "100000",
+                ["Quota:FreeWeeklyAsks"] = "100000",
             });
         });
     }

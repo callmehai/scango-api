@@ -28,6 +28,8 @@ public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : Con
             geminiModel = s.GeminiModel,
             aiMock = s.AiMock,
             ocrMock = s.OcrMock,
+            freeWeeklyScans = s.FreeWeeklyScans,
+            freeWeeklyAsks = s.FreeWeeklyAsks,
             availableModels = AllowedModels,
         });
     }
@@ -49,16 +51,22 @@ public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : Con
         if (req.GeminiModel is not null) row.GeminiModel = req.GeminiModel;
         if (req.AiMock is not null) row.AiMock = req.AiMock.Value;
         if (req.OcrMock is not null) row.OcrMock = req.OcrMock.Value;
+        if (req.FreeWeeklyScans is not null) row.FreeWeeklyScans = Math.Max(0, req.FreeWeeklyScans.Value);
+        if (req.FreeWeeklyAsks is not null) row.FreeWeeklyAsks = Math.Max(0, req.FreeWeeklyAsks.Value);
         row.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
-        settings.Set(new SettingsSnapshot(row.GeminiModel, row.AiMock, row.OcrMock));
+        settings.Set(new SettingsSnapshot(
+            row.GeminiModel, row.AiMock, row.OcrMock,
+            row.FreeWeeklyScans, row.FreeWeeklyAsks));
 
         return Ok(new
         {
             geminiModel = row.GeminiModel,
             aiMock = row.AiMock,
             ocrMock = row.OcrMock,
+            freeWeeklyScans = row.FreeWeeklyScans,
+            freeWeeklyAsks = row.FreeWeeklyAsks,
             availableModels = AllowedModels,
         });
     }
@@ -69,4 +77,6 @@ public class UpdateSettingsRequest
     public string? GeminiModel { get; set; }
     public bool? AiMock { get; set; }
     public bool? OcrMock { get; set; }
+    public int? FreeWeeklyScans { get; set; }
+    public int? FreeWeeklyAsks { get; set; }
 }

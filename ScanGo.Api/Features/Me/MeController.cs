@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ScanGo.Api.Common;
 using ScanGo.Api.Database;
+using ScanGo.Api.Database.Entities;
 using ScanGo.Api.Features.Auth;
+using ScanGo.Api.Features.Metering;
 
 namespace ScanGo.Api.Features.Me;
 
@@ -13,8 +15,27 @@ namespace ScanGo.Api.Features.Me;
 public class MeController(
     ScanGoDbContext db,
     IRefreshTokenService refreshTokens,
-    IAccountDeletionService deletion) : ControllerBase
+    IAccountDeletionService deletion,
+    IQuotaService quota) : ControllerBase
 {
+    [HttpGet("usage")]
+    public async Task<IActionResult> Usage(CancellationToken ct)
+    {
+        var userId = User.RequireUserId();
+        var plan = User.Plan() ?? PlanCodes.Free;
+        var role = User.Role() ?? UserRoles.User;
+        var s = await quota.GetStatusAsync(userId, plan, role, ct);
+        return Ok(new
+        {
+            limited = s.Limited,
+            scansUsed = s.ScansUsed,
+            scansLimit = s.ScansLimit,
+            asksUsed = s.AsksUsed,
+            asksLimit = s.AsksLimit,
+            resetAtUtc = s.ResetAtUtc,
+        });
+    }
+
     [HttpGet]
     public async Task<IActionResult> Get(CancellationToken ct)
     {

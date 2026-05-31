@@ -46,6 +46,8 @@ public class ScanGoDbContext(DbContextOptions<ScanGoDbContext> options) : DbCont
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.GeminiModel).HasMaxLength(64).IsRequired();
+            e.Property(x => x.FreeWeeklyScans).HasDefaultValue(3);
+            e.Property(x => x.FreeWeeklyAsks).HasDefaultValue(5);
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
         });
     }

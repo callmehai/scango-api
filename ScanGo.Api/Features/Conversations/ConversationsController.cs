@@ -3,13 +3,17 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ScanGo.Api.Common;
+using ScanGo.Api.Database.Entities;
+using ScanGo.Api.Features.Metering;
 
 namespace ScanGo.Api.Features.Conversations;
 
 [ApiController]
 [Route("api/conversations")]
 [Authorize]
-public class ConversationsController(IConversationService convos) : ControllerBase
+public class ConversationsController(
+    IConversationService convos,
+    IQuotaService quota) : ControllerBase
 {
     [HttpPost("scan-create")]
     [RequestSizeLimit(15 * 1024 * 1024)]               // 15 MB hard cap on body
@@ -26,6 +30,15 @@ public class ConversationsController(IConversationService convos) : ControllerBa
         if (image.Length > ConversationService.MaxUploadBytes)
             return StatusCode(StatusCodes.Status413PayloadTooLarge,
                 new { code = "ImageTooLarge", message = "Ảnh không được lớn hơn 10MB." });
+
+        var plan = User.Plan() ?? PlanCodes.Free;
+        var role = User.Role() ?? UserRoles.User;
+        if (!await quota.TryConsumeAsync(User.RequireUserId(), plan, role, UsageKinds.Scan, ct))
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                code = "QuotaExceeded",
+                message = "Bạn đã hết lượt quét miễn phí tuần này. Quota reset vào đầu tuần sau.",
+            });
 
         await using var stream = image.OpenReadStream();
         var (dto, err) = await convos.CreateScanAsync(
@@ -112,6 +125,19 @@ public class ConversationsController(IConversationService convos) : ControllerBa
     public async Task AskStream(
         Guid id, [FromBody] AskRequest req, CancellationToken ct)
     {
+        var plan = User.Plan() ?? PlanCodes.Free;
+        var role = User.Role() ?? UserRoles.User;
+        if (!await quota.TryConsumeAsync(User.RequireUserId(), plan, role, UsageKinds.Ask, ct))
+        {
+            Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            await Response.WriteAsJsonAsync(new
+            {
+                code = "QuotaExceeded",
+                message = "Bạn đã hết lượt hỏi miễn phí tuần này.",
+            }, ct);
+            return;
+        }
+
         await WriteSseAsync(
             convos.AskStreamAsync(User.RequireUserId(), id, req.Question, ct), ct);
     }

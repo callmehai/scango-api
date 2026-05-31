@@ -1,6 +1,11 @@
 namespace ScanGo.Api.Common;
 
-public record SettingsSnapshot(string GeminiModel, bool AiMock, bool OcrMock);
+public record SettingsSnapshot(
+    string GeminiModel,
+    bool AiMock,
+    bool OcrMock,
+    int FreeWeeklyScans,
+    int FreeWeeklyAsks);
 
 /// <summary>
 /// Process-wide cache of admin-editable runtime settings (AI model + mock
@@ -11,8 +16,12 @@ public record SettingsSnapshot(string GeminiModel, bool AiMock, bool OcrMock);
 /// </summary>
 public class RuntimeSettings
 {
-    private volatile SettingsSnapshot _current =
-        new("gemini-2.5-flash-lite", AiMock: true, OcrMock: true);
+    private volatile SettingsSnapshot _current = new(
+        "gemini-2.5-flash-lite",
+        AiMock: true,
+        OcrMock: true,
+        FreeWeeklyScans: 3,
+        FreeWeeklyAsks: 5);
 
     public SettingsSnapshot Current => _current;
 

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ScanGo.Api.Database;
 using ScanGo.Api.Database.Entities;
 using ScanGo.Api.Features.Ai;
+using ScanGo.Api.Features.Metering;
 using ScanGo.Api.Features.Ocr;
 using ScanGo.Api.Features.Storage;
 
@@ -71,7 +72,8 @@ public class ConversationService(
     ScanGoDbContext db,
     IObjectStorage storage,
     IOcrService ocr,
-    IGeminiService gemini) : IConversationService
+    IGeminiService gemini,
+    IQuotaService quota) : IConversationService
 {
     public const int MaxTitleLength = 200;
     public const long MaxUploadBytes = 10 * 1024 * 1024;     // 10 MB
@@ -270,7 +272,7 @@ public class ConversationService(
             // (ct cancelled) or Gemini errored partway. Uses a non-cancellable token so
             // the write survives a cancelled request. usage.Usage is populated here;
             // PR4 will write credit_ledger.
-            await PersistScanResultAsync(convo, full.ToString());
+            await PersistScanResultAsync(convo, full.ToString(), usage.Usage);
         }
     }
 
@@ -315,7 +317,7 @@ public class ConversationService(
         finally
         {
             // Persist the assistant reply even if the client disconnected mid-stream.
-            await PersistAskResultAsync(convo, full.ToString());
+            await PersistAskResultAsync(convo, full.ToString(), usage.Usage);
         }
     }
 
@@ -323,7 +325,8 @@ public class ConversationService(
     // mid-stream client disconnect doesn't lose what the user already saw. Title is
     // clamped to the column limit (varchar(200)) defensively, independent of
     // TitleExtractor's own cap, so the two can't silently drift apart.
-    private async Task PersistScanResultAsync(Conversation convo, string fullText)
+    private async Task PersistScanResultAsync(
+        Conversation convo, string fullText, AiTokenUsage usage)
     {
         if (fullText.Length == 0) return;          // nothing streamed (e.g. instant disconnect)
 
@@ -337,11 +340,13 @@ public class ConversationService(
             Role = MessageRoles.Assistant,
             Content = body.Length > 0 ? body : fullText,
         });
+        quota.AddUsageEvent(convo.UserId, convo.Id, UsageKinds.Scan, usage, ocrCalled: true);
         convo.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(CancellationToken.None);
     }
 
-    private async Task PersistAskResultAsync(Conversation convo, string fullText)
+    private async Task PersistAskResultAsync(
+        Conversation convo, string fullText, AiTokenUsage usage)
     {
         if (fullText.Length == 0) return;
 
@@ -351,6 +356,7 @@ public class ConversationService(
             Role = MessageRoles.Assistant,
             Content = fullText,
         });
+        quota.AddUsageEvent(convo.UserId, convo.Id, UsageKinds.Ask, usage, ocrCalled: false);
         convo.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(CancellationToken.None);
     }

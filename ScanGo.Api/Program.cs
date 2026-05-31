@@ -12,6 +12,7 @@ using ScanGo.Api.Features.Ai;
 using ScanGo.Api.Features.Auth;
 using ScanGo.Api.Features.Conversations;
 using ScanGo.Api.Features.Email;
+using ScanGo.Api.Features.Metering;
 using ScanGo.Api.Features.Me;
 using ScanGo.Api.Features.Ocr;
 using ScanGo.Api.Features.Storage;
@@ -100,6 +101,11 @@ builder.Services.AddSingleton<IObjectStorage>(sp =>
         : ActivatorUtilities.CreateInstance<LocalObjectStorage>(sp);
 });
 builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<IQuotaService, QuotaService>();
+
+// Background maintenance: grace-period account hard-deletes (quota itself
+// auto-resets via ISO-week period keys, no job needed).
+builder.Services.AddHostedService<WeeklyMaintenanceService>();
 
 // OCR + Gemini — both mock and real impls are registered; a per-request
 // dispatcher picks which to use based on the live RuntimeSettings flags, so an
@@ -245,6 +251,7 @@ using (var scope = app.Services.CreateScope())
     {
         var ai = scope.ServiceProvider.GetRequiredService<IOptions<AiOptions>>().Value;
         var ocr = scope.ServiceProvider.GetRequiredService<IOptions<OcrOptions>>().Value;
+        var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         row = new AppSetting
         {
             Id = AppSetting.SingletonId,
@@ -253,12 +260,16 @@ using (var scope = app.Services.CreateScope())
                 : ai.GeminiModel,
             AiMock = ai.Mock || string.IsNullOrWhiteSpace(ai.GeminiApiKey),
             OcrMock = ocr.Mock || string.IsNullOrWhiteSpace(ocr.OcrSpaceApiKey),
+            FreeWeeklyScans = cfg.GetValue("Quota:FreeWeeklyScans", 3),
+            FreeWeeklyAsks = cfg.GetValue("Quota:FreeWeeklyAsks", 5),
             UpdatedAt = DateTime.UtcNow,
         };
         db.AppSettings.Add(row);
         await db.SaveChangesAsync();
     }
-    runtime.Set(new SettingsSnapshot(row.GeminiModel, row.AiMock, row.OcrMock));
+    runtime.Set(new SettingsSnapshot(
+        row.GeminiModel, row.AiMock, row.OcrMock,
+        row.FreeWeeklyScans, row.FreeWeeklyAsks));
 }
 
 // ============================================================================

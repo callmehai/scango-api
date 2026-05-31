@@ -24,12 +24,14 @@ public static class UserStatuses
 public static class PlanCodes
 {
     public const string Free = "free";
+    public const string Lite = "lite";                 // 7-day trial tier
     public const string BasicMonthly = "basic_monthly";
     public const string ProMonthly = "pro_monthly";
-    public const string ProYearly = "pro_yearly";
+    public const string ProYearly = "pro_yearly";      // displayed as "Max"
     public const string Unlimited = "unlimited";
 
-    public static readonly string[] All = [Free, BasicMonthly, ProMonthly, ProYearly, Unlimited];
+    public static readonly string[] All =
+        [Free, Lite, BasicMonthly, ProMonthly, ProYearly, Unlimited];
 }
 
 public static class ConversationTopics

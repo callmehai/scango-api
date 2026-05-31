@@ -3,6 +3,7 @@ using System;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ScanGo.Api.Database;
@@ -12,9 +13,11 @@ using ScanGo.Api.Database;
 namespace ScanGo.Api.Database.Migrations
 {
     [DbContext(typeof(ScanGoDbContext))]
-    partial class ScanGoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260530205344_AddQuotaSettings")]
+    partial class AddQuotaSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -890,7 +893,7 @@ namespace ScanGo.Api.Database.Migrations
                         {
                             t.HasCheckConstraint("ck_users_has_auth_method", "password_hash IS NOT NULL OR google_id IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_users_plan", "plan IN ('free', 'lite', 'basic_monthly', 'pro_monthly', 'pro_yearly', 'unlimited')");
+                            t.HasCheckConstraint("ck_users_plan", "plan IN ('free', 'basic_monthly', 'pro_monthly', 'pro_yearly', 'unlimited')");
 
                             t.HasCheckConstraint("ck_users_role", "role IN ('admin', 'user', 'tester')");
 
