@@ -254,7 +254,7 @@ public class ScanGoDbContext(DbContextOptions<ScanGoDbContext> options) : DbCont
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
             e.Property(x => x.PeriodKey).HasMaxLength(16).IsRequired();
-            e.Property(x => x.PeriodKind).HasMaxLength(8).IsRequired();
+            e.Property(x => x.PeriodKind).HasMaxLength(16).IsRequired();
             e.Property(x => x.CreditsUsed).HasDefaultValue(0);
             e.Property(x => x.ScanCount).HasDefaultValue(0);
             e.Property(x => x.AskCount).HasDefaultValue(0);
