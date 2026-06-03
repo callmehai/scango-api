@@ -21,6 +21,14 @@ RUN dotnet publish ScanGo.Api/ScanGo.Api.csproj \
 # ----- Runtime stage -----
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION} AS runtime
 WORKDIR /app
+
+# Npgsql probes libgssapi (Kerberos) when opening a connection; the slim aspnet
+# image doesn't ship it, which spams "Cannot load library libgssapi_krb5.so.2".
+# We auth with a password so it's harmless — install the lib to silence it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:8080

@@ -79,6 +79,12 @@ builder.Services.AddDbContext<ScanGoDbContext>((sp, opts) =>
         throw new InvalidOperationException(
             "Connection string 'Postgres' (or DATABASE_URL env) is required.");
     opts.UseNpgsql(connStr).UseSnakeCaseNamingConvention();
+    // Our First/FirstOrDefault calls all filter on unique keys (PK id, or
+    // user_id+period_key), so the result is deterministic — silence EF's
+    // "row-limiting operator without OrderBy" warning (10103) it can't infer.
+    opts.ConfigureWarnings(w =>
+        w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId
+            .RowLimitingOperationWithoutOrderByWarning));
 });
 
 // Auth services
