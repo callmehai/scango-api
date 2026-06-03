@@ -12,7 +12,10 @@ namespace ScanGo.Api.Features.Admin;
 
 [ApiController]
 [Route("api/admin")]
-[Authorize(Roles = UserRoles.Admin)]
+// Admin + tester can VIEW (GET users/metrics/plans). Every mutation method
+// below is additionally locked to [Authorize(Roles = Admin)] so testers get a
+// full read-only view but can't touch users/roles/plans/quota.
+[Authorize(Roles = UserRoles.Admin + "," + UserRoles.Tester)]
 public class AdminUsersController(
     ScanGoDbContext db,
     RuntimeSettings settings,
@@ -135,6 +138,7 @@ public class AdminUsersController(
         });
     }
 
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpPost("users/{id:guid}/reset-quota")]
     public async Task<IActionResult> ResetQuota(Guid id, CancellationToken ct)
     {
@@ -143,6 +147,7 @@ public class AdminUsersController(
         return Ok(new { ok = true });
     }
 
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpPost("users/{id:guid}/suspend")]
     public async Task<IActionResult> Suspend(Guid id, CancellationToken ct)
     {
@@ -159,6 +164,7 @@ public class AdminUsersController(
         return Ok(new { ok = true, status = user.Status });
     }
 
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpPost("users/{id:guid}/unsuspend")]
     public async Task<IActionResult> Unsuspend(Guid id, CancellationToken ct)
     {
@@ -173,6 +179,7 @@ public class AdminUsersController(
         return Ok(new { ok = true, status = user.Status });
     }
 
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpDelete("users/{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
@@ -185,6 +192,7 @@ public class AdminUsersController(
         return rows > 0 ? Ok(new { ok = true }) : NotFound();
     }
 
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpPatch("users/{id:guid}/role")]
     public async Task<IActionResult> ChangeRole(
         Guid id, [FromBody] ChangeRoleRequest req, CancellationToken ct)
@@ -217,6 +225,7 @@ public class AdminUsersController(
             durationDays = p.DurationDays,
         }));
 
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpPatch("users/{id:guid}/plan")]
     public async Task<IActionResult> ChangePlan(
         Guid id, [FromBody] ChangePlanRequest req, CancellationToken ct)

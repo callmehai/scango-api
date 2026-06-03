@@ -18,7 +18,10 @@ public static class Plans
         new(PlanCodes.BasicMonthly, "Basic (tháng)", 49_000, 30),
         new(PlanCodes.ProMonthly, "Pro (tháng)", 149_000, 30),
         new(PlanCodes.ProYearly, "Max (năm)", 1_290_000, 365),
-        new(PlanCodes.Unlimited, "Unlimited (nội bộ)", 0, null),
+        // "Unlimited" intentionally omitted from the catalogue — it's an internal
+        // ceiling only (the PlanCodes constant + CHECK constraint still exist for
+        // any legacy data). Unlimited usage for staff comes from the tester/admin
+        // ROLE, not a selectable plan.
     ];
 
     public static PlanInfo? Find(string code) =>

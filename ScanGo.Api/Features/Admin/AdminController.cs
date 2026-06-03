@@ -13,7 +13,8 @@ namespace ScanGo.Api.Features.Admin;
 /// </summary>
 [ApiController]
 [Route("api/admin")]
-[Authorize(Roles = UserRoles.Admin)]
+// Admin + tester can read settings; only admin can change them (PATCH below).
+[Authorize(Roles = UserRoles.Admin + "," + UserRoles.Tester)]
 public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : ControllerBase
 {
     public static readonly string[] AllowedModels =
@@ -34,6 +35,7 @@ public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : Con
         });
     }
 
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpPatch("settings")]
     public async Task<IActionResult> UpdateSettings(
         [FromBody] UpdateSettingsRequest req, CancellationToken ct)
