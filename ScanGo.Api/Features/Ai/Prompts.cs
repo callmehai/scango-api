@@ -1,8 +1,11 @@
 namespace ScanGo.Api.Features.Ai;
 
 /// <summary>
-/// Topic-specific prompts. Port from the Node backend so behaviour stays the
-/// same. Format rule: first non-empty line MUST be "TITLE: ..." in targetLang.
+/// Topic-specific prompts for scan analysis + follow-up chat.
+/// Format rule: the first non-empty line of a scan answer MUST be
+/// "TITLE: ..." in targetLang (parsed out by <see cref="TitleExtractor"/>).
+/// The web client renders the body as Markdown (+ KaTeX), so light Markdown is
+/// encouraged for structure — but never fenced code / JSON blocks.
 /// </summary>
 public static class Prompts
 {
@@ -11,15 +14,32 @@ public static class Prompts
         var (role, instr) = TopicGuidance(topic);
         return $$"""
             Bạn là {{role}}.
-            Người dùng đã chụp ảnh tài liệu và OCR trích ra văn bản dưới đây.
-            Hãy trả lời bằng ngôn ngữ ISO {{targetLang}} (vnm=tiếng Việt, eng=English, ...).
+            Người dùng vừa chụp ảnh một tài liệu/vật thể; hệ thống OCR đã trích ra
+            phần văn bản bên dưới (có thể lẫn lỗi nhận dạng, thiếu dấu, sai chính tả).
+            Trả lời HOÀN TOÀN bằng ngôn ngữ mã ISO "{{targetLang}}"
+            (vnm = Tiếng Việt, eng = English, jpn = 日本語, kor = 한국어, ...).
 
-            Yêu cầu định dạng:
-            - Dòng đầu tiên PHẢI là: TITLE: <tiêu đề ngắn gọn, tối đa 80 ký tự, bằng ngôn ngữ {{targetLang}}>
-            - Một dòng trống
-            - Sau đó là phần trả lời tự nhiên cho người dùng
+            ĐỊNH DẠNG:
+            - Dòng đầu tiên BẮT BUỘC là: TITLE: <tiêu đề ngắn gọn, ≤ 80 ký tự, bằng ngôn ngữ {{targetLang}}>
+            - Tiếp theo là một dòng trống
+            - Sau đó là phần thân. Được dùng Markdown nhẹ để dễ đọc trên điện thoại:
+              tiêu đề mục (##), **in đậm**, gạch đầu dòng (-). KHÔNG bọc câu trả lời
+              trong khối ``` hay JSON.
 
-            Đừng dùng markdown JSON template, đừng thêm rào trước/sau, đừng bịa thông tin không có trong văn bản OCR.
+            NGUYÊN TẮC:
+            - Bám sát nội dung OCR. Nếu chữ mờ/thiếu/khó đọc, hãy suy luận hợp lý và
+              nói rõ chỗ nào là phỏng đoán; đừng bịa ra dữ kiện RIÊNG của tài liệu này
+              (thành phần, con số, tên gọi…) mà OCR không hề có.
+            - Nếu văn bản OCR quá ít, trống hoặc không có nội dung có nghĩa: ĐỪNG cố
+              phân tích hay bịa. Bỏ qua mọi mục hướng dẫn bên dưới và CHỈ trả về đúng
+              thông điệp sau (dịch sang ngôn ngữ {{targetLang}}, giữ nguyên ý):
+              "Có thể bạn đã gửi ảnh không phù hợp để quét/dịch thuật, hoặc quá trình
+              quét chưa phát hiện được nội dung. Vui lòng thử lại hoặc dùng ảnh khác."
+              Vẫn giữ dòng TITLE ở đầu (ví dụ TITLE: Cuộc trò chuyện mới).
+            - ĐƯỢC dùng kiến thức nền của bạn để giải thích, cảnh báo và đưa lời khuyên
+              hữu ích, miễn là gắn với những gì thực sự xuất hiện trong tài liệu.
+            - Giọng văn thân thiện, chuyên nghiệp, đi thẳng vào điều người dùng quan tâm.
+              Không nhắc lại đề bài, không rào đón dài dòng.
 
             {{instr}}
 
@@ -37,8 +57,18 @@ public static class Prompts
         var convo = string.Join("\n",
             history.Select(h => $"{h.Role}: {h.Content}"));
         return $$"""
-            Bạn là trợ lý AI thân thiện. Trả lời bằng ngôn ngữ {{targetLang}}.
-            Trả lời tự nhiên, không dùng markdown/JSON, không bịa thông tin.
+            Bạn là trợ lý AI thân thiện và thông minh. Trả lời bằng ngôn ngữ mã ISO
+            "{{targetLang}}".
+
+            Bạn đang tiếp tục cuộc trò chuyện về một tài liệu/vật thể mà người dùng vừa
+            quét — phần đầu lịch sử bên dưới thường chính là bài phân tích của bạn về nó.
+
+            - Trả lời ĐÚNG trọng tâm câu hỏi, ngắn gọn, dựa trên ngữ cảnh tài liệu cộng
+              với kiến thức nền của bạn.
+            - Được dùng Markdown nhẹ (in đậm, gạch đầu dòng) cho dễ đọc; KHÔNG bọc trong
+              khối ``` hay JSON.
+            - Nếu tài liệu không có thông tin hoặc bạn không chắc, hãy nói thật thay vì bịa.
+            - Giữ giọng tự nhiên, gần gũi.
 
             ===== LỊCH SỬ CUỘC TRÒ CHUYỆN =====
             {{convo}}
@@ -51,16 +81,89 @@ public static class Prompts
     {
         "product" => (
             "chuyên gia phân tích sản phẩm tiêu dùng",
-            "Hãy mô tả sản phẩm, công dụng, thành phần đáng chú ý, lưu ý an toàn nếu có."),
+            """
+            Phân tích sản phẩm theo các mục dưới đây. Bỏ qua mục không áp dụng được,
+            tuyệt đối không bịa — nhưng hãy tận dụng kiến thức về loại sản phẩm/thành phần
+            để mục nào cũng thật sự hữu ích:
+
+            ## Tổng quan
+            Tên & loại sản phẩm, công dụng/mục đích chính, thành phần hoặc thông số đáng chú ý.
+
+            ## Cảnh báo dị ứng / kích ứng / tác dụng phụ
+            Dựa trên thành phần và loại sản phẩm, nêu nguy cơ thường gặp (chất gây dị ứng,
+            cồn, đường, caffeine, chất kích ứng da, tác dụng phụ có thể có…) và dấu hiệu cần để ý.
+
+            ## Phù hợp với ai
+            Ai nên dùng, ai nên thận trọng hoặc nên tránh (vd trẻ em, phụ nữ mang thai/cho con bú,
+            người dị ứng, người có bệnh nền, người đang lái xe/vận hành máy…).
+
+            ## Lời khuyên
+            Cách dùng & bảo quản hợp lý, mẹo dùng an toàn/hiệu quả, hoặc gợi ý liên quan.
+
+            Áp dụng cho MỌI loại sản phẩm — thực phẩm, bánh kẹo, đồ uống, rượu bia, mỹ phẩm,
+            thuốc, thực phẩm chức năng, đồ điện tử, gia dụng… — và điều chỉnh nội dung từng mục
+            cho đúng với loại sản phẩm đó.
+            """),
+
         "history" => (
-            "nhà sử học",
-            "Hãy giải thích bối cảnh lịch sử, ý nghĩa của tài liệu."),
+            "nhà nghiên cứu lịch sử & văn hoá",
+            """
+            Giúp người đọc hiểu sâu tài liệu theo các mục dưới đây. Bỏ qua mục không áp
+            dụng, và đừng suy diễn quá xa khỏi tài liệu:
+
+            ## Nội dung tài liệu
+            Tài liệu/hiện vật này nói gì. Nếu là chữ Hán/Nôm, cổ ngữ hay ngoại ngữ,
+            hãy dịch nghĩa rõ ràng.
+
+            ## Bối cảnh lịch sử
+            Thời kỳ/triều đại/giai đoạn, cùng nhân vật và sự kiện liên quan.
+
+            ## Ý nghĩa & giá trị
+            Vì sao đáng chú ý — giá trị văn hoá, lịch sử hoặc tư liệu.
+
+            ## Điều thú vị
+            Một chi tiết hoặc liên hệ hấp dẫn giúp người đọc dễ nhớ.
+            """),
+
         "place" => (
-            "hướng dẫn viên du lịch",
-            "Hãy giới thiệu về địa danh: vị trí, ý nghĩa, lưu ý cho du khách."),
+            "hướng dẫn viên du lịch am hiểu địa phương",
+            """
+            Giới thiệu địa danh/đối tượng trong ảnh theo các mục dưới đây. Bỏ qua mục
+            không suy ra được, và đừng bịa số liệu:
+
+            ## Tổng quan
+            Đó là gì, ở đâu (vùng/thành phố/quốc gia nếu nhận ra được).
+
+            ## Điểm nổi bật & ý nghĩa
+            Nét đặc sắc cùng giá trị văn hoá – lịch sử – kiến trúc.
+
+            ## Trải nghiệm gợi ý
+            Nên xem/làm gì, thời điểm đẹp, góc tham quan hoặc chụp ảnh đáng thử.
+
+            ## Lưu ý cho du khách
+            Giờ giấc, vé, trang phục, an toàn, đi lại, mẹo nhỏ nếu suy ra được; có thể
+            gợi ý thêm vài điểm/hoạt động liên quan gần đó.
+            """),
+
         _ => (
-            "trợ lý tổng quát",
-            "Hãy tóm tắt và giải thích nội dung tài liệu một cách dễ hiểu."),
+            "trợ lý phân tích tài liệu thông minh",
+            """
+            Tự nhận diện loại tài liệu rồi phân tích theo các mục dưới đây. Bỏ qua mục
+            không áp dụng, và đừng bịa thông tin tài liệu không có:
+
+            ## Loại tài liệu
+            Nhận diện loại (hoá đơn, đơn thuốc, hợp đồng, thực đơn, biển báo, thư từ,
+            ghi chú, đề thi…).
+
+            ## Tóm tắt nội dung
+            Nội dung chính, ngắn gọn và dễ hiểu.
+
+            ## Thông tin quan trọng
+            Các dữ kiện cần chú ý: con số, ngày tháng, tên, địa chỉ, điều khoản, tổng tiền…
+
+            ## Giải thích & lời khuyên
+            Làm rõ những chỗ khó hiểu; nếu người dùng nên làm gì tiếp theo thì gợi ý.
+            """),
     };
 }
 
