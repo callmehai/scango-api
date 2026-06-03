@@ -3,6 +3,7 @@ using System;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ScanGo.Api.Database;
@@ -12,9 +13,11 @@ using ScanGo.Api.Database;
 namespace ScanGo.Api.Database.Migrations
 {
     [DbContext(typeof(ScanGoDbContext))]
-    partial class ScanGoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260603164644_AddUserAvatar")]
+    partial class AddUserAvatar
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

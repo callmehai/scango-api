@@ -29,4 +29,27 @@ public static class ImageProcessor
         output.Position = 0;
         return output;
     }
+
+    public const int AvatarSize = 256;
+
+    /// <summary>
+    /// Center-crop + resize the image to a square <see cref="AvatarSize"/> JPEG
+    /// for use as a profile avatar. Throws if the input isn't a decodable image.
+    /// Returns a fresh MemoryStream the caller must dispose.
+    /// </summary>
+    public static async Task<MemoryStream> OptimiseAvatarAsync(
+        Stream input, CancellationToken ct)
+    {
+        using var img = await Image.LoadAsync(input, ct);
+        img.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new Size(AvatarSize, AvatarSize),
+            Mode = ResizeMode.Crop,   // fill the square, cropping overflow
+        }));
+
+        var output = new MemoryStream();
+        await img.SaveAsync(output, new JpegEncoder { Quality = JpegQuality }, ct);
+        output.Position = 0;
+        return output;
+    }
 }

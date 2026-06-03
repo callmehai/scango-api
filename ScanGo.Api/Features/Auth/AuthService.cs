@@ -250,6 +250,7 @@ public class AuthService(
         Plan = u.Plan,
         Status = u.Status,
         EmailVerified = u.EmailVerifiedAt is not null,
+        HasAvatar = u.AvatarStorageKey is not null,
         CreatedAt = u.CreatedAt,
     };
 }

@@ -62,6 +62,7 @@ public class ScanGoDbContext(DbContextOptions<ScanGoDbContext> options) : DbCont
             e.Property(x => x.PasswordHash).HasMaxLength(255);
             e.Property(x => x.GoogleId).HasMaxLength(64);
             e.Property(x => x.Name).HasMaxLength(100).IsRequired();
+            e.Property(x => x.AvatarStorageKey).HasMaxLength(128);
             e.Property(x => x.Role).HasMaxLength(16).HasDefaultValue(UserRoles.User).IsRequired();
             e.Property(x => x.Plan).HasMaxLength(32).HasDefaultValue(PlanCodes.Free).IsRequired();
             e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue(UserStatuses.Active).IsRequired();

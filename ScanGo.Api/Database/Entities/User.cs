@@ -7,6 +7,10 @@ public class User
     public string? PasswordHash { get; set; }
     public string? GoogleId { get; set; }
     public string Name { get; set; } = "";
+
+    /// <summary>Object-storage key for the user's avatar, or null if none set.</summary>
+    public string? AvatarStorageKey { get; set; }
+
     public string Role { get; set; } = UserRoles.User;
     public string Plan { get; set; } = PlanCodes.Free;
     public DateTime? PlanExpiresAt { get; set; }

@@ -97,6 +97,12 @@ public class DeleteAccountRequest
     public string? Reason { get; set; }
 }
 
+public class UpdateProfileRequest
+{
+    [Required, StringLength(100, MinimumLength = 1)]
+    public string Name { get; set; } = "";
+}
+
 // ========== Responses ==========
 
 public class UserDto
@@ -108,6 +114,7 @@ public class UserDto
     public string Plan { get; set; } = "";
     public string Status { get; set; } = "";
     public bool EmailVerified { get; set; }
+    public bool HasAvatar { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
