@@ -16,6 +16,7 @@ using ScanGo.Api.Features.Metering;
 using ScanGo.Api.Features.Me;
 using ScanGo.Api.Features.Ocr;
 using ScanGo.Api.Features.Storage;
+using ScanGo.Api.Features.Tts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +64,8 @@ builder.Services.Configure<OcrOptions>(
     builder.Configuration.GetSection(OcrOptions.SectionName));
 builder.Services.Configure<AiOptions>(
     builder.Configuration.GetSection(AiOptions.SectionName));
+builder.Services.Configure<TtsOptions>(
+    builder.Configuration.GetSection(TtsOptions.SectionName));
 
 // DbContext — connection string read LAZILY from IConfiguration so test
 // fixtures' InMemoryCollection overrides apply correctly.
@@ -123,6 +126,14 @@ builder.Services.AddScoped<MockOcrService>();
 builder.Services.AddScoped<MockGeminiService>();
 builder.Services.AddScoped<IOcrService, OcrServiceDispatcher>();
 builder.Services.AddScoped<IGeminiService, GeminiServiceDispatcher>();
+
+// Text-to-speech (read AI answers aloud). A per-request dispatcher picks the
+// real Google Cloud TTS or NullTtsService based on the live TtsMock flag, so an
+// admin can toggle it without a restart. Null → endpoint 503 → client falls back
+// to the browser's built-in voice (also the path when no key is configured).
+builder.Services.AddHttpClient<GoogleTtsService>();
+builder.Services.AddScoped<NullTtsService>();
+builder.Services.AddScoped<ITtsService, TtsServiceDispatcher>();
 
 // Email — DevEmailService logs + remembers in memory. Swap for ResendEmailService later.
 builder.Services.AddScoped<IEmailService, DevEmailService>();
@@ -257,6 +268,7 @@ using (var scope = app.Services.CreateScope())
     {
         var ai = scope.ServiceProvider.GetRequiredService<IOptions<AiOptions>>().Value;
         var ocr = scope.ServiceProvider.GetRequiredService<IOptions<OcrOptions>>().Value;
+        var tts = scope.ServiceProvider.GetRequiredService<IOptions<TtsOptions>>().Value;
         var cfg = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         row = new AppSetting
         {
@@ -266,6 +278,7 @@ using (var scope = app.Services.CreateScope())
                 : ai.GeminiModel,
             AiMock = ai.Mock || string.IsNullOrWhiteSpace(ai.GeminiApiKey),
             OcrMock = ocr.Mock || string.IsNullOrWhiteSpace(ocr.OcrSpaceApiKey),
+            TtsMock = tts.Mock || string.IsNullOrWhiteSpace(tts.GoogleApiKey),
             FreeWeeklyScans = cfg.GetValue("Quota:FreeWeeklyScans", 3),
             FreeWeeklyAsks = cfg.GetValue("Quota:FreeWeeklyAsks", 5),
             UpdatedAt = DateTime.UtcNow,
@@ -274,7 +287,7 @@ using (var scope = app.Services.CreateScope())
         await db.SaveChangesAsync();
     }
     runtime.Set(new SettingsSnapshot(
-        row.GeminiModel, row.AiMock, row.OcrMock,
+        row.GeminiModel, row.AiMock, row.OcrMock, row.TtsMock,
         row.FreeWeeklyScans, row.FreeWeeklyAsks));
 }
 

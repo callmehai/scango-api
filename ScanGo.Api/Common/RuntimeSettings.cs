@@ -4,6 +4,7 @@ public record SettingsSnapshot(
     string GeminiModel,
     bool AiMock,
     bool OcrMock,
+    bool TtsMock,
     int FreeWeeklyScans,
     int FreeWeeklyAsks);
 
@@ -20,6 +21,7 @@ public class RuntimeSettings
         "gemini-2.5-flash-lite",
         AiMock: true,
         OcrMock: true,
+        TtsMock: false,
         FreeWeeklyScans: 3,
         FreeWeeklyAsks: 5);
 

@@ -114,6 +114,24 @@ public class ConversationsController(
         };
     }
 
+    [HttpPost("{id:guid}/speech")]
+    public async Task<IActionResult> Speech(
+        Guid id, [FromBody] SpeechRequest req, CancellationToken ct)
+    {
+        var (audio, found) = await convos.SpeakAsync(
+            User.RequireUserId(), id, req.Text, ct);
+        if (!found) return NotFound();
+        if (audio is null)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                code = "TtsUnavailable",
+                message = "Tính năng đọc chưa được bật.",
+            });
+
+        Response.Headers.CacheControl = "private, max-age=86400";
+        return File(audio, "audio/mpeg");
+    }
+
     [HttpPost("{id:guid}/scan-stream")]
     public async Task ScanStream(Guid id, CancellationToken ct)
     {
@@ -184,4 +202,12 @@ public class AskRequest
 {
     [Required, StringLength(4000, MinimumLength = 1)]
     public string Question { get; set; } = "";
+}
+
+public class SpeechRequest
+{
+    // Google caps synthesize input at 5000 bytes; the service truncates further
+    // if a multibyte answer exceeds it.
+    [Required, StringLength(5000, MinimumLength = 1)]
+    public string Text { get; set; } = "";
 }

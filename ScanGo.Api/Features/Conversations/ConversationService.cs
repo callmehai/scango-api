@@ -6,6 +6,7 @@ using ScanGo.Api.Features.Ai;
 using ScanGo.Api.Features.Metering;
 using ScanGo.Api.Features.Ocr;
 using ScanGo.Api.Features.Storage;
+using ScanGo.Api.Features.Tts;
 
 namespace ScanGo.Api.Features.Conversations;
 
@@ -66,6 +67,14 @@ public interface IConversationService
     /// </summary>
     IAsyncEnumerable<string> AskStreamAsync(
         Guid userId, Guid conversationId, string question, CancellationToken ct);
+
+    /// <summary>
+    /// Synthesize <paramref name="text"/> to MP3 using the conversation's target
+    /// language voice. found=false when the conversation doesn't exist / isn't the
+    /// user's; audio=null when TTS isn't configured (caller → 503).
+    /// </summary>
+    Task<(byte[]? audio, bool found)> SpeakAsync(
+        Guid userId, Guid conversationId, string text, CancellationToken ct);
 }
 
 public class ConversationService(
@@ -73,7 +82,8 @@ public class ConversationService(
     IObjectStorage storage,
     IOcrService ocr,
     IGeminiService gemini,
-    IQuotaService quota) : IConversationService
+    IQuotaService quota,
+    ITtsService tts) : IConversationService
 {
     public const int MaxTitleLength = 200;
     public const long MaxUploadBytes = 10 * 1024 * 1024;     // 10 MB
@@ -218,6 +228,20 @@ public class ConversationService(
                 .SetProperty(c => c.Title, trimmed)
                 .SetProperty(c => c.UpdatedAt, DateTime.UtcNow), ct);
         return rows > 0 ? null : ConversationError.NotFound;
+    }
+
+    public async Task<(byte[]? audio, bool found)> SpeakAsync(
+        Guid userId, Guid conversationId, string text, CancellationToken ct)
+    {
+        // Scope to the owner; project just the target language. null => no row.
+        var targetLang = await db.Conversations
+            .Where(c => c.Id == conversationId && c.UserId == userId)
+            .Select(c => c.TargetLang)
+            .FirstOrDefaultAsync(ct);
+        if (targetLang is null) return (null, false);
+
+        var audio = await tts.SynthesizeAsync(text, targetLang, ct);
+        return (audio, true);
     }
 
     public async Task<ConversationError?> DeleteAsync(

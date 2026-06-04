@@ -14,6 +14,11 @@ public class AppSetting
     public bool AiMock { get; set; } = true;
     public bool OcrMock { get; set; } = true;
 
+    // Read-aloud (TTS). false = use the real Google Cloud TTS; true = "mock"
+    // (no server voice → client falls back to the browser's built-in voice).
+    // Defaults false because GoogleTtsService degrades gracefully without a key.
+    public bool TtsMock { get; set; } = false;
+
     // Free-tier quota per ISO week (admin-editable).
     public int FreeWeeklyScans { get; set; } = 3;
     public int FreeWeeklyAsks { get; set; } = 5;
