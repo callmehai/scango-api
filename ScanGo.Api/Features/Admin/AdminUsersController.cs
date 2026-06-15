@@ -140,6 +140,19 @@ public class AdminUsersController(
         var paidUsers = await db.Users.CountAsync(u => u.Plan != PlanCodes.Free, ct);
         var totalConversations = await db.Conversations.CountAsync(ct);
 
+        // How many users sit on each plan (for the admin "subscribers per plan").
+        var planCounts = await db.Users
+            .GroupBy(u => u.Plan)
+            .Select(g => new { Plan = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Plan, x => x.Count, ct);
+        var planBreakdown = Plans.All.Select(p => new
+        {
+            code = p.Code,
+            name = p.Name,
+            priceVnd = p.PriceVnd,
+            count = planCounts.GetValueOrDefault(p.Code, 0),
+        });
+
         var agg = await db.UsageEvents
             .GroupBy(_ => 1)
             .Select(g => new
@@ -160,6 +173,7 @@ public class AdminUsersController(
             totalUsers,
             paidUsers,
             freeUsers = totalUsers - paidUsers,
+            planBreakdown,
             totalConversations,
             aiCalls = agg?.Events ?? 0,
             totalInputTokens = input,

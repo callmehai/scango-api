@@ -63,6 +63,58 @@ public class AdminPaymentsController(ScanGoDbContext db, IPaymentService payment
         return Ok(new { items, total, skip, limit });
     }
 
+    [HttpGet("revenue")]
+    public async Task<IActionResult> Revenue(
+        [FromQuery] int days = 30, CancellationToken ct = default)
+    {
+        days = Math.Clamp(days, 1, 180);
+        var tz = TimeSpan.FromHours(7); // VN = UTC+7, no DST
+        var now = DateTime.UtcNow;
+        var sinceUtc = now.AddDays(-days);
+
+        // Net revenue = paid orders only (refunds drop to status 'refunded' and are
+        // excluded). Volume is small, so bucket by VN-local day in memory.
+        var paid = await db.PaymentOrders.AsNoTracking()
+            .Where(p => p.Status == PaymentOrderStatuses.Paid
+                        && p.PaidAt != null && p.PaidAt >= sinceUtc)
+            .Select(p => new { p.PaidAt, p.AmountVnd })
+            .ToListAsync(ct);
+
+        var byDay = paid
+            .GroupBy(p => DateOnly.FromDateTime(p.PaidAt!.Value.Add(tz)))
+            .ToDictionary(
+                g => g.Key,
+                g => new { Revenue = g.Sum(x => x.AmountVnd), Count = g.Count() });
+
+        var todayVn = DateOnly.FromDateTime(now.Add(tz));
+        var series = Enumerable.Range(0, days)
+            .Select(i => todayVn.AddDays(-(days - 1) + i))
+            .Select(d =>
+            {
+                byDay.TryGetValue(d, out var v);
+                return new
+                {
+                    date = d.ToString("yyyy-MM-dd"),
+                    revenueVnd = v?.Revenue ?? 0L,
+                    orderCount = v?.Count ?? 0,
+                };
+            })
+            .ToList();
+
+        var refundedTotal = await db.PaymentOrders
+            .Where(p => p.Status == PaymentOrderStatuses.Refunded)
+            .SumAsync(p => p.AmountVnd, ct);
+
+        return Ok(new
+        {
+            days,
+            totalRevenue = series.Sum(s => s.revenueVnd),
+            totalOrders = series.Sum(s => s.orderCount),
+            refundedTotal,
+            series,
+        });
+    }
+
     [HttpPost("{id:guid}/approve")]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct) =>
         await payments.ApproveAsync(id, User.RequireUserId(), bankRef: null, ct)
