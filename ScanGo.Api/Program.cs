@@ -15,6 +15,7 @@ using ScanGo.Api.Features.Email;
 using ScanGo.Api.Features.Metering;
 using ScanGo.Api.Features.Me;
 using ScanGo.Api.Features.Ocr;
+using ScanGo.Api.Features.Payments;
 using ScanGo.Api.Features.Storage;
 using ScanGo.Api.Features.Tts;
 
@@ -66,6 +67,8 @@ builder.Services.Configure<AiOptions>(
     builder.Configuration.GetSection(AiOptions.SectionName));
 builder.Services.Configure<TtsOptions>(
     builder.Configuration.GetSection(TtsOptions.SectionName));
+builder.Services.Configure<PaymentOptions>(
+    builder.Configuration.GetSection(PaymentOptions.SectionName));
 
 // DbContext — connection string read LAZILY from IConfiguration so test
 // fixtures' InMemoryCollection overrides apply correctly.
@@ -111,6 +114,7 @@ builder.Services.AddSingleton<IObjectStorage>(sp =>
 });
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IQuotaService, QuotaService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 // Background maintenance: grace-period account hard-deletes (quota itself
 // auto-resets via ISO-week period keys, no job needed).

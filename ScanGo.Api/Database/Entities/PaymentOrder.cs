@@ -13,6 +13,8 @@ public class PaymentOrder
     public DateTime? PaidAt { get; set; }
     public Guid? ApprovedByUserId { get; set; }
     public DateTime ExpiresAt { get; set; }
+    public string? Note { get; set; }               // admin note, e.g. refund reason
+    public DateTime? RefundedAt { get; set; }        // set when status -> refunded
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

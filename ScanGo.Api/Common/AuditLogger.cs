@@ -18,6 +18,11 @@ public static class AuditActions
     public const string EmailVerified = "email_verified";
     public const string AccountDeletionRequested = "account_deletion_requested";
     public const string AccountHardDeleted = "account_hard_deleted";
+    public const string PaymentCreated = "payment_created";
+    public const string PaymentApproved = "payment_approved";
+    public const string PaymentRejected = "payment_rejected";
+    public const string PaymentRefunded = "payment_refunded";
+    public const string PaymentUnmatched = "payment_unmatched";
 }
 
 public interface IAuditLogger

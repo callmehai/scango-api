@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,10 +13,11 @@ namespace ScanGo.Api.Features.Admin;
 
 [ApiController]
 [Route("api/admin")]
-// Admin + tester can VIEW (GET users/metrics/plans). Every mutation method
-// below is additionally locked to [Authorize(Roles = Admin)] so testers get a
-// full read-only view but can't touch users/roles/plans/quota.
-[Authorize(Roles = UserRoles.Admin + "," + UserRoles.Tester)]
+// Admin-only. Testers previously had a read-only view of users/metrics/plans,
+// but that leaked too much user data as the tester pool grew, so the entire
+// admin surface is now restricted to admins. (Testers keep their quota bypass —
+// that lives in QuotaService and is unrelated to admin-panel access.)
+[Authorize(Roles = UserRoles.Admin)]
 public class AdminUsersController(
     ScanGoDbContext db,
     RuntimeSettings settings,
@@ -27,10 +29,13 @@ public class AdminUsersController(
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 50,
         [FromQuery] string? q = null,
+        [FromQuery] string sort = "created",
+        [FromQuery] string order = "desc",
         CancellationToken ct = default)
     {
         skip = Math.Max(0, skip);
         limit = Math.Clamp(limit, 1, 100);
+        var desc = !string.Equals(order, "asc", StringComparison.OrdinalIgnoreCase);
 
         var query = db.Users.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(q))
@@ -41,8 +46,26 @@ public class AdminUsersController(
         }
 
         var total = await query.CountAsync(ct);
-        var users = await query
-            .OrderByDescending(u => u.CreatedAt)
+
+        // Sort server-side (with a stable Id tiebreaker) so paging stays correct
+        // past the first page and "newest registered" is a first-class option.
+        // `convos`/`tokens` order by a correlated subquery over the related tables.
+        var ordered = sort switch
+        {
+            "email" => SortBy(query, u => u.Email, desc),
+            "name" => SortBy(query, u => u.Name, desc),
+            "plan" => SortBy(query, u => u.Plan, desc),
+            "status" => SortBy(query, u => u.Status, desc),
+            "role" => SortBy(query, u => u.Role, desc),
+            "lastLogin" => SortBy(query, u => u.LastLoginAt, desc),
+            "convos" => SortBy(query, u => db.Conversations.Count(c => c.UserId == u.Id), desc),
+            "tokens" => SortBy(query, u => db.UsageEvents
+                .Where(e => e.UserId == u.Id)
+                .Sum(e => (long)e.InputTokens + e.OutputTokens), desc),
+            _ => SortBy(query, u => u.CreatedAt, desc), // "created" (default)
+        };
+
+        var users = await ordered
             .Skip(skip).Take(limit)
             .ToListAsync(ct);
 
@@ -101,6 +124,14 @@ public class AdminUsersController(
 
         return Ok(new { items, total, skip, limit });
     }
+
+    // Applies the chosen sort direction plus a stable Id tiebreaker so that rows
+    // with equal sort keys keep a deterministic order across pages.
+    private static IOrderedQueryable<User> SortBy<TKey>(
+        IQueryable<User> query, Expression<Func<User, TKey>> key, bool desc) =>
+        desc
+            ? query.OrderByDescending(key).ThenByDescending(u => u.Id)
+            : query.OrderBy(key).ThenBy(u => u.Id);
 
     [HttpGet("metrics")]
     public async Task<IActionResult> Metrics(CancellationToken ct)

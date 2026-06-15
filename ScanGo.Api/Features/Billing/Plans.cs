@@ -14,7 +14,7 @@ public static class Plans
     public static readonly IReadOnlyList<PlanInfo> All =
     [
         new(PlanCodes.Free, "Free", 0, null),
-        new(PlanCodes.Lite, "Lite (tuần)", 19_000, 7),
+        new(PlanCodes.Lite, "Lite (tuần)", 29_000, 7),
         new(PlanCodes.BasicMonthly, "Basic (tháng)", 49_000, 30),
         new(PlanCodes.ProMonthly, "Pro (tháng)", 149_000, 30),
         new(PlanCodes.ProYearly, "Max (năm)", 1_290_000, 365),

@@ -319,6 +319,7 @@ public class ScanGoDbContext(DbContextOptions<ScanGoDbContext> options) : DbCont
             e.Property(x => x.Status).HasMaxLength(16).HasDefaultValue(PaymentOrderStatuses.Pending).IsRequired();
             e.Property(x => x.PaymentMethod).HasMaxLength(16).HasDefaultValue("bank_transfer").IsRequired();
             e.Property(x => x.BankRef).HasMaxLength(120);
+            e.Property(x => x.Note).HasMaxLength(200);
             e.Property(x => x.CreatedAt).HasDefaultValueSql("now()");
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
 

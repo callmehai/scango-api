@@ -13,8 +13,9 @@ namespace ScanGo.Api.Features.Admin;
 /// </summary>
 [ApiController]
 [Route("api/admin")]
-// Admin + tester can read settings; only admin can change them (PATCH below).
-[Authorize(Roles = UserRoles.Admin + "," + UserRoles.Tester)]
+// Admin-only. Testers used to get a read-only view here, but with the team
+// growing that exposed too much, so the whole admin surface is admin-only now.
+[Authorize(Roles = UserRoles.Admin)]
 public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : ControllerBase
 {
     public static readonly string[] AllowedModels =
