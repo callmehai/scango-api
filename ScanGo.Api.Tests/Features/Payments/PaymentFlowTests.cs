@@ -167,6 +167,36 @@ public class PaymentFlowTests(PostgresFixture pg) : IClassFixture<PostgresFixtur
         (await db.Users.SingleAsync(u => u.Id == userId)).Plan.Should().Be(PlanCodes.BasicMonthly);
     }
 
+    [Fact]
+    public async Task Webhook_RevivesExpiredOrder_OnLatePayment()
+    {
+        var userId = await SeedUserAsync();
+        var (view, _) = await NewSvc().CreateOrderAsync(userId, PlanCodes.Lite, default);
+
+        // Simulate the order having expired before the (late) transfer arrives.
+        await using (var db = pg.CreateContext())
+        {
+            var o = await db.PaymentOrders.SingleAsync(p => p.Id == view!.Id);
+            o.Status = PaymentOrderStatuses.Expired;
+            await db.SaveChangesAsync();
+        }
+
+        var result = await NewSvc().ProcessSePayAsync(new SePayWebhook
+        {
+            TransferType = "in",
+            TransferAmount = 29_000,
+            Content = $"{view!.OrderCode} FT123456",
+            ReferenceCode = "FT-LATE-1",
+        }, default);
+
+        result.Should().Be(WebhookResult.Matched);
+
+        await using var db2 = pg.CreateContext();
+        (await db2.PaymentOrders.SingleAsync(p => p.Id == view.Id)).Status
+            .Should().Be(PaymentOrderStatuses.Paid);
+        (await db2.Users.SingleAsync(u => u.Id == userId)).Plan.Should().Be(PlanCodes.Lite);
+    }
+
     private async Task SetPlanAsync(Guid userId, string plan, int daysLeft)
     {
         await using var db = pg.CreateContext();

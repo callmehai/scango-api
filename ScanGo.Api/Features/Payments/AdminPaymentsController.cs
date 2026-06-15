@@ -23,6 +23,16 @@ public class AdminPaymentsController(ScanGoDbContext db, IPaymentService payment
         skip = Math.Max(0, skip);
         limit = Math.Clamp(limit, 1, 100);
 
+        // Lazily flip overdue pending orders to "expired" so the list shows the
+        // real state (and stops offering approve/reject on dead orders). A late
+        // bank transfer can still revive one — the SePay webhook matches expired
+        // orders too.
+        await db.PaymentOrders
+            .Where(p => p.Status == PaymentOrderStatuses.Pending && p.ExpiresAt < DateTime.UtcNow)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(p => p.Status, PaymentOrderStatuses.Expired)
+                .SetProperty(p => p.UpdatedAt, DateTime.UtcNow), ct);
+
         var query = db.PaymentOrders.AsNoTracking().AsQueryable();
         if (!string.IsNullOrWhiteSpace(status) && PaymentOrderStatuses.All.Contains(status))
             query = query.Where(p => p.Status == status);

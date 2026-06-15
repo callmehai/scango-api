@@ -155,8 +155,13 @@ public partial class PaymentService(
         var code = ExtractCode(payload.Content);
         if (code is not null)
         {
+            // Match pending OR expired by code: bank transfers can land after the
+            // order's TTL (people pay late), and we'd rather honour a real payment
+            // than reject it for being a few minutes slow.
             var order = await db.PaymentOrders.FirstOrDefaultAsync(
-                p => p.OrderCode == code && p.Status == PaymentOrderStatuses.Pending, ct);
+                p => p.OrderCode == code
+                    && (p.Status == PaymentOrderStatuses.Pending
+                        || p.Status == PaymentOrderStatuses.Expired), ct);
             // Accept exact-or-overpay; an underpayment falls through to "unmatched".
             if (order is not null && payload.TransferAmount >= order.AmountVnd)
             {
