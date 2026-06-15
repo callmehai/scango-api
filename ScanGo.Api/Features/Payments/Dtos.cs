@@ -46,4 +46,4 @@ public record OrderView(
     string AccountNo,
     string AccountHolder);
 
-public enum CreateOrderError { InvalidPlan, NotConfigured }
+public enum CreateOrderError { InvalidPlan, NotConfigured, Downgrade }

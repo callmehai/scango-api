@@ -38,6 +38,21 @@ public partial class PaymentService(
 
         var now = DateTime.UtcNow;
 
+        // No downgrades while a paid plan is still active: prepaid model has no
+        // proration/refund, so dropping to a cheaper plan would just burn the
+        // remaining time. Same plan (renewal) and pricier plans (upgrade) are fine;
+        // to downgrade, the user waits for the current plan to expire. (Admins can
+        // still force any plan via /admin/users.)
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return (null, CreateOrderError.InvalidPlan);
+        var current = Plans.Find(user.Plan);
+        var currentActive = current is not null
+            && user.Plan != PlanCodes.Free
+            && (user.PlanExpiresAt is null || user.PlanExpiresAt > now);
+        if (currentActive && info.PriceVnd < current!.PriceVnd)
+            return (null, CreateOrderError.Downgrade);
+
         // Reuse an existing still-payable pending order for the same plan so a user
         // refreshing the checkout doesn't pile up dead orders.
         var existing = await db.PaymentOrders

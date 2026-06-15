@@ -20,6 +20,8 @@ public class PaymentsController(IPaymentService payments) : ControllerBase
                 BadRequest(new { code = "InvalidPlan", message = "Gói không hợp lệ." }),
             CreateOrderError.NotConfigured =>
                 StatusCode(503, new { code = "PaymentNotConfigured", message = "Thanh toán chưa được cấu hình." }),
+            CreateOrderError.Downgrade =>
+                BadRequest(new { code = "Downgrade", message = "Không thể hạ gói khi gói hiện tại còn hạn. Vui lòng chờ gói hết hạn rồi đổi." }),
             _ => Ok(view),
         };
     }

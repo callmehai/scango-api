@@ -167,6 +167,45 @@ public class PaymentFlowTests(PostgresFixture pg) : IClassFixture<PostgresFixtur
         (await db.Users.SingleAsync(u => u.Id == userId)).Plan.Should().Be(PlanCodes.BasicMonthly);
     }
 
+    private async Task SetPlanAsync(Guid userId, string plan, int daysLeft)
+    {
+        await using var db = pg.CreateContext();
+        var u = await db.Users.SingleAsync(x => x.Id == userId);
+        u.Plan = plan;
+        u.PlanExpiresAt = DateTime.UtcNow.AddDays(daysLeft);
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task CreateOrder_BlocksDowngradeWhilePlanActive()
+    {
+        var userId = await SeedUserAsync();
+        await SetPlanAsync(userId, PlanCodes.ProYearly, daysLeft: 300); // priciest plan
+
+        // Cheaper plan while Pro (year) is active → blocked.
+        var (_, err) = await NewSvc().CreateOrderAsync(userId, PlanCodes.Lite, default);
+        err.Should().Be(CreateOrderError.Downgrade);
+
+        // Re-buying the same plan (renewal) is allowed.
+        var (renew, renewErr) =
+            await NewSvc().CreateOrderAsync(userId, PlanCodes.ProYearly, default);
+        renewErr.Should().BeNull();
+        renew.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CreateOrder_AllowsUpgradeWhilePlanActive()
+    {
+        var userId = await SeedUserAsync();
+        await SetPlanAsync(userId, PlanCodes.BasicMonthly, daysLeft: 20);
+
+        // Pro is pricier than Basic → upgrade allowed.
+        var (view, err) =
+            await NewSvc().CreateOrderAsync(userId, PlanCodes.ProMonthly, default);
+        err.Should().BeNull();
+        view.Should().NotBeNull();
+    }
+
     private sealed class NoopAudit : IAuditLogger
     {
         public Task LogAsync(string action, Guid? actorUserId = null, Guid? targetUserId = null,
