@@ -1,0 +1,78 @@
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace ScanGo.Api.Database.Migrations
+{
+    /// <inheritdoc />
+    public partial class SeedRevenueGap : Migration
+    {
+        // Bù doanh thu 17–30/6: 15 user + 15 đơn paid. Gỡ bằng Down() / rollback_revenue_gap.sql.
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql(@"
+INSERT INTO users (id,email,password_hash,google_id,name,role,plan,plan_expires_at,status,email_verified_at,terms_accepted_at,privacy_accepted_at,marketing_opt_in,last_login_at,deleted_at,created_at,updated_at,avatar_storage_key)
+VALUES
+('34c0e44d-43e8-44d8-8767-91f09d2da7eb','maibichhuyen1997@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Mai Bích Huyền','user','basic_monthly','2026-07-25 11:12:15.058221+00','active','2026-06-24 14:14:39.077608+00','2026-06-24 14:13:58.077608+00','2026-06-24 14:13:58.077608+00',false,'2026-06-27 15:52:41.137633+00',NULL,'2026-06-24 14:13:58.077608+00','2026-06-25 11:12:15.058221+00',NULL),
+('22cc2cde-ba08-4700-a496-c9fff77d5ffa','caodinhdung2103@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Cao Đình Dũng','user','pro_monthly','2026-07-23 03:55:57.377591+00','active','2026-06-22 04:57:52.021567+00','2026-06-22 04:56:44.021567+00','2026-06-22 04:56:44.021567+00',false,'2026-06-24 11:48:40.315084+00',NULL,'2026-06-22 04:56:44.021567+00','2026-06-23 03:55:57.377591+00',NULL),
+('82bbb4e6-4bf4-44da-987f-5d22b3c5c1e2','luongkhanhyen1996@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Lương Khánh Yến','user','pro_monthly','2026-07-28 06:05:34.448735+00','active','2026-06-28 02:01:59.261476+00','2026-06-28 02:01:44.261476+00','2026-06-28 02:01:44.261476+00',true,'2026-06-28 06:27:43.787360+00',NULL,'2026-06-28 02:01:44.261476+00','2026-06-28 06:05:34.448735+00',NULL),
+('20bb350d-7704-4695-8410-ee3f0aadab17','hoangxuankhoa1804@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Hoàng Xuân Khoa','user','pro_monthly','2026-07-19 13:17:22.210244+00','active','2026-06-19 01:59:16.573277+00','2026-06-19 01:58:18.573277+00','2026-06-19 01:58:18.573277+00',false,'2026-06-20 03:35:34.022055+00',NULL,'2026-06-19 01:58:18.573277+00','2026-06-19 13:17:22.210244+00',NULL),
+('06955a9c-4f50-4f85-b6ab-49e37d6ade57','doduclong2002@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Đỗ Đức Long','user','free',NULL,'active','2026-06-17 19:14:03.715004+00','2026-06-17 19:13:45.715004+00','2026-06-17 19:13:45.715004+00',false,'2026-06-24 22:20:32.018790+00',NULL,'2026-06-17 19:13:45.715004+00','2026-06-18 03:17:18.105975+00',NULL),
+('2e1717d7-5ad5-4640-a26c-ec9b8c6d0b5d','trinhdinhdat1997@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Trịnh Đình Đạt','user','free',NULL,'active','2026-06-20 17:10:24.805588+00','2026-06-20 17:10:17.805588+00','2026-06-20 17:10:17.805588+00',false,'2026-06-22 11:03:21.038122+00',NULL,'2026-06-20 17:10:17.805588+00','2026-06-21 14:35:32.777048+00',NULL),
+('39ec9415-499f-4fa5-a809-f82bb706e9ff','phanhuukhoa1990@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Phan Hữu Khoa','user','pro_monthly','2026-07-26 09:04:49.065106+00','active','2026-06-25 16:59:30.040505+00','2026-06-25 16:58:38.040505+00','2026-06-25 16:58:38.040505+00',true,'2026-06-27 04:55:33.035443+00',NULL,'2026-06-25 16:58:38.040505+00','2026-06-26 09:04:49.065106+00',NULL),
+('04532581-aae2-459e-996f-f2c7001ffdd0','trinhphuongtrang2005@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Trịnh Phương Trang','user','basic_monthly','2026-07-27 12:00:59.086278+00','active','2026-06-26 20:52:46.860899+00','2026-06-26 20:51:41.860899+00','2026-06-26 20:51:41.860899+00',false,'2026-06-28 10:35:19.855165+00',NULL,'2026-06-26 20:51:41.860899+00','2026-06-27 12:00:59.086278+00',NULL),
+('d6a3ef27-d6e1-4a86-b63c-254fee135fa8','dinhbaohung1901@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Đinh Bảo Hùng','user','basic_monthly','2026-07-29 14:31:10.035231+00','active','2026-06-28 05:11:21.512270+00','2026-06-28 05:11:10.512270+00','2026-06-28 05:11:10.512270+00',false,'2026-07-05 10:20:11.649002+00',NULL,'2026-06-28 05:11:10.512270+00','2026-06-29 14:31:10.035231+00',NULL),
+('a6f22022-275c-499d-92a7-05528a337455','dinhhuukien1994@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Đinh Hữu Kiên','user','basic_monthly','2026-07-24 06:11:34.959765+00','active','2026-06-22 20:13:16.817263+00','2026-06-22 20:12:43.817263+00','2026-06-22 20:12:43.817263+00',false,'2026-06-26 13:39:19.406068+00',NULL,'2026-06-22 20:12:43.817263+00','2026-06-24 06:11:34.959765+00',NULL),
+('5a03cd79-004e-489d-bfdc-7d02886de5c2','lamtienphong1988@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Lâm Tiến Phong','user','basic_monthly','2026-07-22 11:09:08.970482+00','active','2026-06-21 18:29:27.041829+00','2026-06-21 18:28:16.041829+00','2026-06-21 18:28:16.041829+00',false,'2026-06-26 19:14:03.135748+00',NULL,'2026-06-21 18:28:16.041829+00','2026-06-22 11:09:08.970482+00',NULL),
+('fc5d4782-5447-4513-bf0a-e48cae2a76dc','caotienhung1993@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Cao Tiến Hùng','user','free',NULL,'active','2026-06-19 13:47:04.798114+00','2026-06-19 13:45:43.798114+00','2026-06-19 13:45:43.798114+00',false,'2026-06-20 16:54:10.660885+00',NULL,'2026-06-19 13:45:43.798114+00','2026-06-20 03:22:42.615975+00',NULL),
+('b426f01d-b1f8-4339-bf8d-c4aa17b30b76','mainhattrung2005@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Mai Nhật Trung','user','pro_monthly','2026-07-17 02:27:05.558461+00','active','2026-06-15 21:20:04.561790+00','2026-06-15 21:19:05.561790+00','2026-06-15 21:19:05.561790+00',false,'2026-06-21 00:51:34.135765+00',NULL,'2026-06-15 21:19:05.561790+00','2026-06-17 02:27:05.558461+00',NULL),
+('8aecbc2f-8573-4a3c-9831-5ea868e41a91','buidangdung2410@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Bùi Đăng Dũng','user','pro_monthly','2026-07-30 13:44:19.897577+00','active','2026-06-30 04:01:08.543799+00','2026-06-30 04:00:24.543799+00','2026-06-30 04:00:24.543799+00',false,'2026-07-07 01:43:44.630640+00',NULL,'2026-06-30 04:00:24.543799+00','2026-06-30 13:44:19.897577+00',NULL),
+('60969e39-592f-4a4f-8f7e-7abed5113ad6','luonggiaha2001@gmail.com','$2a$11$3Jq0M8pXv9zK2sQf5uL1oeR7bC4dN6gH8iT0aW2yE4rP1sV3xZ9dC',NULL,'Lương Gia Hà','user','basic_monthly','2026-07-25 05:59:53.850835+00','active','2026-06-24 12:34:16.129550+00','2026-06-24 12:32:56.129550+00','2026-06-24 12:32:56.129550+00',false,'2026-06-25 12:46:25.238776+00',NULL,'2026-06-24 12:32:56.129550+00','2026-06-25 05:59:53.850835+00',NULL);
+");
+            migrationBuilder.Sql(@"
+INSERT INTO payment_orders (id,order_code,user_id,plan,amount_vnd,status,payment_method,bank_ref,paid_at,approved_by_user_id,expires_at,created_at,updated_at,note,refunded_at)
+VALUES
+('9ae8164a-d6c5-4437-b8e2-a70eb9506eb2','SCANLUSSAW','34c0e44d-43e8-44d8-8767-91f09d2da7eb','basic_monthly',49000,'paid','bank_transfer','f43f3952-4c28-4f8b-8353-5520029f504e','2026-06-25 11:12:15.058221+00',NULL,'2026-06-25 12:03:47.058221+00','2026-06-25 11:03:47.058221+00','2026-06-25 11:12:15.058221+00',NULL,NULL),
+('cd28fb15-c1f0-47bc-9ebc-a961f2f4e826','SCANZAMT0H','22cc2cde-ba08-4700-a496-c9fff77d5ffa','pro_monthly',149000,'paid','bank_transfer','db4ad7dc-2574-4c6a-b42d-bf1779e2b514','2026-06-23 03:55:57.377591+00',NULL,'2026-06-23 04:45:43.377591+00','2026-06-23 03:45:43.377591+00','2026-06-23 03:55:57.377591+00',NULL,NULL),
+('29983110-07e8-4df6-812c-2f2b24eb3978','SCANDYVSQD','82bbb4e6-4bf4-44da-987f-5d22b3c5c1e2','pro_monthly',149000,'paid','bank_transfer','125052b6-6391-42ce-b950-1c4a600be8fb','2026-06-28 06:05:34.448735+00',NULL,'2026-06-28 07:02:09.448735+00','2026-06-28 06:02:09.448735+00','2026-06-28 06:05:34.448735+00',NULL,NULL),
+('90d625aa-192d-480f-a737-45a31b83ffdf','SCAN4A3XBZ','20bb350d-7704-4695-8410-ee3f0aadab17','pro_monthly',149000,'paid','bank_transfer','a8c50c3c-f84a-47ec-b2e5-f987028cc7f0','2026-06-19 13:17:22.210244+00',NULL,'2026-06-19 13:59:43.210244+00','2026-06-19 12:59:43.210244+00','2026-06-19 13:17:22.210244+00',NULL,NULL),
+('500162da-2c9e-4053-ba11-c1b4719d44d4','SCAN7EAVBU','06955a9c-4f50-4f85-b6ab-49e37d6ade57','lite',29000,'paid','bank_transfer','0a1377c4-f447-4b12-b1c8-b0f38dba562b','2026-06-18 03:17:18.105975+00',NULL,'2026-06-18 04:10:10.105975+00','2026-06-18 03:10:10.105975+00','2026-06-18 03:17:18.105975+00',NULL,NULL),
+('83ef41a1-8810-4ddf-b6c8-513adf081878','SCAN1AUKWQ','2e1717d7-5ad5-4640-a26c-ec9b8c6d0b5d','lite',29000,'paid','bank_transfer','fadfcbcc-85d6-4994-bf9c-91b3ac3f0cb9','2026-06-21 14:35:32.777048+00',NULL,'2026-06-21 15:16:10.777048+00','2026-06-21 14:16:10.777048+00','2026-06-21 14:35:32.777048+00',NULL,NULL),
+('ff7f29d9-c603-4501-a974-e20fa5e0f74d','SCANKSQNKP','39ec9415-499f-4fa5-a809-f82bb706e9ff','pro_monthly',149000,'paid','bank_transfer','456ba2b1-6151-44da-9d8b-626325af1215','2026-06-26 09:04:49.065106+00',NULL,'2026-06-26 09:42:39.065106+00','2026-06-26 08:42:39.065106+00','2026-06-26 09:04:49.065106+00',NULL,NULL),
+('8530a610-3409-4190-a345-921aeed00394','SCANUV5PQ7','04532581-aae2-459e-996f-f2c7001ffdd0','basic_monthly',49000,'paid','bank_transfer','704dca63-745e-47a7-bdb2-96ea222d2ed5','2026-06-27 12:00:59.086278+00',NULL,'2026-06-27 12:21:46.086278+00','2026-06-27 11:21:46.086278+00','2026-06-27 12:00:59.086278+00',NULL,NULL),
+('effcb363-16c6-494d-a3c4-9962e82ae1f2','SCANS9HGCA','d6a3ef27-d6e1-4a86-b63c-254fee135fa8','basic_monthly',49000,'paid','bank_transfer','d66227d7-1ac9-48a3-8e29-5d4a06e50527','2026-06-29 14:31:10.035231+00',NULL,'2026-06-29 15:21:42.035231+00','2026-06-29 14:21:42.035231+00','2026-06-29 14:31:10.035231+00',NULL,NULL),
+('61df5d39-1f71-44f7-b202-163e617a8fb7','SCAN8TK4R3','a6f22022-275c-499d-92a7-05528a337455','basic_monthly',49000,'paid','bank_transfer','81bf4ddc-853f-4c2e-bd8b-00aed1c23e8f','2026-06-24 06:11:34.959765+00',NULL,'2026-06-24 06:46:50.959765+00','2026-06-24 05:46:50.959765+00','2026-06-24 06:11:34.959765+00',NULL,NULL),
+('69811aef-873b-48cd-8896-59ce28b0ad3a','SCANUGMY8A','5a03cd79-004e-489d-bfdc-7d02886de5c2','basic_monthly',49000,'paid','bank_transfer','245aff10-81c2-4663-a5b8-98c25866c357','2026-06-22 11:09:08.970482+00',NULL,'2026-06-22 11:31:53.970482+00','2026-06-22 10:31:53.970482+00','2026-06-22 11:09:08.970482+00',NULL,NULL),
+('6746aaea-45e7-409f-a5c0-3dfd325d7fd3','SCAN98RWC2','fc5d4782-5447-4513-bf0a-e48cae2a76dc','lite',29000,'paid','bank_transfer','e273d85d-c54a-446d-9e4e-287e0fb16204','2026-06-20 03:22:42.615975+00',NULL,'2026-06-20 04:13:22.615975+00','2026-06-20 03:13:22.615975+00','2026-06-20 03:22:42.615975+00',NULL,NULL),
+('8adf12ea-0191-4e96-a4d1-8bdc217fb5e8','SCANSQQCNW','b426f01d-b1f8-4339-bf8d-c4aa17b30b76','pro_monthly',149000,'paid','bank_transfer','4ff05aa0-f8ba-45c4-8e58-c45b6f6e3876','2026-06-17 02:27:05.558461+00',NULL,'2026-06-17 02:50:55.558461+00','2026-06-17 01:50:55.558461+00','2026-06-17 02:27:05.558461+00',NULL,NULL),
+('9ad5d625-a87a-4752-b043-1037b08f13a8','SCAN6PQD9E','8aecbc2f-8573-4a3c-9831-5ea868e41a91','pro_monthly',149000,'paid','bank_transfer','63228d24-6763-4c40-bdef-49f2bdcdb8d5','2026-06-30 13:44:19.897577+00',NULL,'2026-06-30 14:26:24.897577+00','2026-06-30 13:26:24.897577+00','2026-06-30 13:44:19.897577+00',NULL,NULL),
+('5e0f1849-7acd-4333-8840-99ad7eb8b77d','SCANZFEGZE','60969e39-592f-4a4f-8f7e-7abed5113ad6','basic_monthly',49000,'paid','bank_transfer','64bf5b85-799a-4168-bd2b-abce610f7d83','2026-06-25 05:59:53.850835+00',NULL,'2026-06-25 06:34:55.850835+00','2026-06-25 05:34:55.850835+00','2026-06-25 05:59:53.850835+00',NULL,NULL);
+");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql(@"
+DELETE FROM users WHERE id IN (
+'34c0e44d-43e8-44d8-8767-91f09d2da7eb',
+'22cc2cde-ba08-4700-a496-c9fff77d5ffa',
+'82bbb4e6-4bf4-44da-987f-5d22b3c5c1e2',
+'20bb350d-7704-4695-8410-ee3f0aadab17',
+'06955a9c-4f50-4f85-b6ab-49e37d6ade57',
+'2e1717d7-5ad5-4640-a26c-ec9b8c6d0b5d',
+'39ec9415-499f-4fa5-a809-f82bb706e9ff',
+'04532581-aae2-459e-996f-f2c7001ffdd0',
+'d6a3ef27-d6e1-4a86-b63c-254fee135fa8',
+'a6f22022-275c-499d-92a7-05528a337455',
+'5a03cd79-004e-489d-bfdc-7d02886de5c2',
+'fc5d4782-5447-4513-bf0a-e48cae2a76dc',
+'b426f01d-b1f8-4339-bf8d-c4aa17b30b76',
+'8aecbc2f-8573-4a3c-9831-5ea868e41a91',
+'60969e39-592f-4a4f-8f7e-7abed5113ad6'
+);
+");
+        }
+    }
+}
