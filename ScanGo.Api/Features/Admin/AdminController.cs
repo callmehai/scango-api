@@ -18,8 +18,18 @@ namespace ScanGo.Api.Features.Admin;
 [Authorize(Roles = UserRoles.Admin)]
 public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : ControllerBase
 {
+    // Đã verify gọi thật được bằng API key của project (2026-07-14).
+    // KHÔNG đưa vào đây:
+    // - gemini-2.5-pro, gemini-3-pro-preview: có trong ListModels nhưng gọi thật
+    //   trả 404 (key không có quyền).
+    // - gemini-3.1-pro-preview: gọi được nhưng quá đắt ($2/1M in, $12/1M out).
+    // Thứ tự: mạnh -> nhẹ.
     public static readonly string[] AllowedModels =
-        ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
+    [
+        "gemini-3.5-flash",         // Flash thế hệ mới nhất, bản ổn định
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+    ];
 
     [HttpGet("settings")]
     public IActionResult GetSettings()
@@ -33,6 +43,7 @@ public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : Con
             ttsMock = s.TtsMock,
             freeWeeklyScans = s.FreeWeeklyScans,
             freeWeeklyAsks = s.FreeWeeklyAsks,
+            searchGrounding = s.SearchGrounding,
             availableModels = AllowedModels,
         });
     }
@@ -58,12 +69,13 @@ public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : Con
         if (req.TtsMock is not null) row.TtsMock = req.TtsMock.Value;
         if (req.FreeWeeklyScans is not null) row.FreeWeeklyScans = Math.Max(0, req.FreeWeeklyScans.Value);
         if (req.FreeWeeklyAsks is not null) row.FreeWeeklyAsks = Math.Max(0, req.FreeWeeklyAsks.Value);
+        if (req.SearchGrounding is not null) row.SearchGrounding = req.SearchGrounding.Value;
         row.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
 
         settings.Set(new SettingsSnapshot(
             row.GeminiModel, row.AiMock, row.OcrMock, row.TtsMock,
-            row.FreeWeeklyScans, row.FreeWeeklyAsks));
+            row.FreeWeeklyScans, row.FreeWeeklyAsks, row.SearchGrounding));
 
         return Ok(new
         {
@@ -73,6 +85,7 @@ public class AdminController(ScanGoDbContext db, RuntimeSettings settings) : Con
             ttsMock = row.TtsMock,
             freeWeeklyScans = row.FreeWeeklyScans,
             freeWeeklyAsks = row.FreeWeeklyAsks,
+            searchGrounding = row.SearchGrounding,
             availableModels = AllowedModels,
         });
     }
@@ -84,6 +97,7 @@ public class UpdateSettingsRequest
     public bool? AiMock { get; set; }
     public bool? OcrMock { get; set; }
     public bool? TtsMock { get; set; }
+    public bool? SearchGrounding { get; set; }
     public int? FreeWeeklyScans { get; set; }
     public int? FreeWeeklyAsks { get; set; }
 }

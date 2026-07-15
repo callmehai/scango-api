@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -21,6 +22,7 @@ public class GeminiHttpService(
     public async IAsyncEnumerable<string> StreamAsync(
         string prompt,
         UsageBox usage,
+        string targetLang,
         [EnumeratorCancellation] CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(_opts.GeminiApiKey))
@@ -30,20 +32,28 @@ public class GeminiHttpService(
             $"https://generativelanguage.googleapis.com/v1beta/models/{settings.Current.GeminiModel}" +
             $":streamGenerateContent?alt=sse&key={_opts.GeminiApiKey}";
 
-        var payload = new
+        var contents = new[]
         {
-            contents = new[]
-            {
-                new { role = "user", parts = new[] { new { text = prompt } } },
-            },
+            new { role = "user", parts = new[] { new { text = prompt } } },
         };
+
+        // Google Search grounding: ta LUÔN đưa tool cho model (khi admin bật), còn
+        // việc có tra cứu hay không là do MODEL tự quyết theo từng câu hỏi. Không
+        // tra -> không có groundingMetadata -> không chèn nguồn.
+        // Đọc từ RuntimeSettings để admin bật/tắt là ăn ngay, khỏi restart.
+        // Hai nhánh serialize kiểu cụ thể (không dùng biến `object`) vì
+        // JsonSerializer.Serialize trên biến khai báo `object` sẽ ra "{}".
+        var requestBody = settings.Current.SearchGrounding
+            ? JsonSerializer.Serialize(new
+            {
+                contents,
+                tools = new[] { new { google_search = new { } } },
+            })
+            : JsonSerializer.Serialize(new { contents });
 
         using var req = new HttpRequestMessage(HttpMethod.Post, url)
         {
-            Content = new StringContent(
-                JsonSerializer.Serialize(payload),
-                Encoding.UTF8,
-                "application/json"),
+            Content = new StringContent(requestBody, Encoding.UTF8, "application/json"),
         };
 
         using var resp = await http.SendAsync(
@@ -58,6 +68,8 @@ public class GeminiHttpService(
 
         var input = 0;
         var output = 0;
+        // Nguồn model đã tra cứu (giữ thứ tự, khử trùng theo uri).
+        var sources = new List<(string Title, string Uri)>();
 
         await using var stream = await resp.Content.ReadAsStreamAsync(ct);
         using var reader = new StreamReader(stream);
@@ -73,15 +85,21 @@ public class GeminiHttpService(
 
             if (root.TryGetProperty("candidates", out var cands) && cands.GetArrayLength() > 0)
             {
-                var parts = cands[0].GetProperty("content").GetProperty("parts");
-                foreach (var p in parts.EnumerateArray())
+                var cand = cands[0];
+                if (cand.TryGetProperty("content", out var content)
+                    && content.TryGetProperty("parts", out var parts))
                 {
-                    if (p.TryGetProperty("text", out var t))
+                    foreach (var p in parts.EnumerateArray())
                     {
-                        var s = t.GetString() ?? "";
-                        if (s.Length > 0) yield return s;
+                        if (p.TryGetProperty("text", out var t))
+                        {
+                            var s = t.GetString() ?? "";
+                            if (s.Length > 0) yield return s;
+                        }
                     }
                 }
+
+                CollectSources(cand, sources);
             }
 
             if (root.TryGetProperty("usageMetadata", out var um))
@@ -93,6 +111,47 @@ public class GeminiHttpService(
             }
         }
 
+        // Model có tra cứu -> nối danh sách nguồn vào cuối câu trả lời dưới dạng
+        // Markdown (client vốn đã render Markdown nên link tự bấm được, và nguồn
+        // được lưu luôn vào nội dung tin nhắn). Không tra cứu -> không có gì.
+        if (sources.Count > 0)
+            yield return BuildSourcesBlock(
+                sources, _opts.MaxSources, Prompts.SourcesHeading(targetLang));
+
         usage.Usage = new AiTokenUsage(input, output);
+    }
+
+    /// <summary>
+    /// Nhặt nguồn từ candidate.groundingMetadata.groundingChunks[].web
+    /// (title = tên miền, uri = link redirect của Google). Khử trùng theo uri.
+    /// </summary>
+    private static void CollectSources(
+        JsonElement candidate, List<(string Title, string Uri)> sources)
+    {
+        if (!candidate.TryGetProperty("groundingMetadata", out var gm)
+            || !gm.TryGetProperty("groundingChunks", out var chunks)
+            || chunks.ValueKind != JsonValueKind.Array)
+            return;
+
+        foreach (var chunk in chunks.EnumerateArray())
+        {
+            if (!chunk.TryGetProperty("web", out var web)) continue;
+
+            var uri = web.TryGetProperty("uri", out var u) ? u.GetString() : null;
+            if (string.IsNullOrWhiteSpace(uri)) continue;
+            if (sources.Any(s => s.Uri == uri)) continue;
+
+            var title = web.TryGetProperty("title", out var t) ? t.GetString() : null;
+            sources.Add((string.IsNullOrWhiteSpace(title) ? uri : title, uri));
+        }
+    }
+
+    private static string BuildSourcesBlock(
+        List<(string Title, string Uri)> sources, int max, string heading)
+    {
+        var sb = new StringBuilder($"\n\n---\n**{heading}:**\n");
+        foreach (var (title, uri) in sources.Take(Math.Max(1, max)))
+            sb.Append(CultureInfo.InvariantCulture, $"- [{title}]({uri})\n");
+        return sb.ToString();
     }
 }

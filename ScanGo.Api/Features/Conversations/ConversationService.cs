@@ -284,7 +284,7 @@ public class ConversationService(
         var full = new System.Text.StringBuilder();
         try
         {
-            await foreach (var chunk in gemini.StreamAsync(prompt, usage, ct))
+            await foreach (var chunk in gemini.StreamAsync(prompt, usage, convo.TargetLang, ct))
             {
                 full.Append(chunk);
                 yield return chunk;
@@ -332,7 +332,7 @@ public class ConversationService(
         var full = new System.Text.StringBuilder();
         try
         {
-            await foreach (var chunk in gemini.StreamAsync(prompt, usage, ct))
+            await foreach (var chunk in gemini.StreamAsync(prompt, usage, convo.TargetLang, ct))
             {
                 full.Append(chunk);
                 yield return chunk;

@@ -49,6 +49,9 @@ public class ScanGoDbContext(DbContextOptions<ScanGoDbContext> options) : DbCont
             e.Property(x => x.TtsMock).HasDefaultValue(false);
             e.Property(x => x.FreeWeeklyScans).HasDefaultValue(3);
             e.Property(x => x.FreeWeeklyAsks).HasDefaultValue(5);
+            // Default TRUE: hàng app_settings đang có sẵn sẽ được backfill = true
+            // khi migration chạy -> tra cứu & trích nguồn BẬT sẵn.
+            e.Property(x => x.SearchGrounding).HasDefaultValue(true);
             e.Property(x => x.UpdatedAt).HasDefaultValueSql("now()");
         });
     }

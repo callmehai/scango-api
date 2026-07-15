@@ -13,7 +13,7 @@ public class GeminiServiceDispatcher(
     GeminiHttpService real) : IGeminiService
 {
     public IAsyncEnumerable<string> StreamAsync(
-        string prompt, UsageBox usage, CancellationToken ct) =>
+        string prompt, UsageBox usage, string targetLang, CancellationToken ct) =>
         (settings.Current.AiMock ? (IGeminiService)mock : real)
-            .StreamAsync(prompt, usage, ct);
+            .StreamAsync(prompt, usage, targetLang, ct);
 }

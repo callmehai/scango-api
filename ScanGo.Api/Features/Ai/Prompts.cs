@@ -15,6 +15,46 @@ public static class Prompts
     /// code ("vnm") — the latter tends to get echoed back as the first line of
     /// the answer. Unknown codes fall back to the code itself.
     /// </summary>
+    /// <summary>
+    /// Hướng dẫn tra cứu + trích nguồn, dùng chung cho scan & chat.
+    /// Tool google_search LUÔN được bật ở <see cref="GeminiHttpService"/> (khi
+    /// Ai:SearchGrounding = true) — nhưng MODEL tự quyết khi nào cần tra. Danh sách
+    /// link nguồn do server tự chèn vào cuối câu trả lời từ groundingMetadata, nên
+    /// ở đây dặn model KHÔNG tự dán URL (tránh link bịa).
+    /// </summary>
+    private const string SearchGuidance = """
+        TRA CỨU & TRÍCH NGUỒN:
+        - Bạn CÓ công cụ tìm kiếm Google. Hãy TỰ QUYẾT ĐỊNH khi nào cần dùng:
+          • NÊN tra cứu khi câu trả lời phụ thuộc thông tin thay đổi theo thời gian
+            hoặc đòi hỏi chính xác: giá cả, khuyến mãi, tin tức, sự kiện, quy định,
+            thông số sản phẩm mới, tình trạng còn hàng, đánh giá thực tế, số liệu
+            thống kê, thông tin về một người/địa điểm/tổ chức cụ thể.
+          • KHÔNG cần tra với kiến thức phổ thông ổn định, giải thích khái niệm,
+            dịch thuật, hoặc khi chỉ cần dựa vào nội dung tài liệu đã có.
+        - Khi CÓ tra cứu: ưu tiên số liệu tra được thay vì phỏng đoán, và nói rõ
+          thông tin lấy từ đâu ngay trong câu văn (ví dụ "theo cellphones.com.vn…").
+          TUYỆT ĐỐI KHÔNG tự dán URL/link — hệ thống sẽ tự chèn danh sách nguồn ở
+          cuối câu trả lời.
+        - Khi KHÔNG tra cứu: đừng nói như thể vừa tra realtime; với thông tin thay
+          đổi theo thời gian thì nói dạng khoảng và lưu ý có thể đã cũ.
+        """;
+
+    /// <summary>
+    /// Tiêu đề mục nguồn, theo ngôn ngữ câu trả lời — do server tự chèn (model
+    /// không tự dán link) nên phải tự dịch ở đây. Mã lạ -> tiếng Anh.
+    /// Giữ đồng bộ với <see cref="LangName"/>.
+    /// </summary>
+    public static string SourcesHeading(string targetLang) => targetLang switch
+    {
+        "vnm" => "Nguồn tham khảo",
+        "eng" => "Sources",
+        "jpn" => "参考情報",
+        "kor" => "출처",
+        "zho" or "chi" => "参考来源",
+        "fra" => "Sources",
+        _ => "Sources",
+    };
+
     private static string LangName(string code) => code switch
     {
         "vnm" => "Tiếng Việt",
@@ -54,13 +94,14 @@ public static class Prompts
               "Có thể bạn đã gửi ảnh không phù hợp để quét/dịch thuật, hoặc quá trình
               quét chưa phát hiện được nội dung. Vui lòng thử lại hoặc dùng ảnh khác."
               Vẫn giữ dòng TITLE ở đầu (ví dụ TITLE: Cuộc trò chuyện mới).
-            - ĐƯỢC dùng kiến thức nền của bạn để giải thích, cảnh báo và đưa lời khuyên
-              hữu ích. Cũng được bổ sung thông tin chung NGOÀI tài liệu khi có ích — như
-              khoảng giá tham khảo, mức độ phổ biến, đánh giá chung về loại sản phẩm —
-              nhưng coi đó là tham khảo: giá nói dạng khoảng và có thể đã thay đổi, đừng
-              nhầm lẫn nó với dữ kiện in trên tài liệu.
+            - ĐƯỢC dùng kiến thức nền của bạn (và công cụ tra cứu, xem mục bên dưới) để
+              giải thích, cảnh báo và đưa lời khuyên hữu ích. Cũng được bổ sung thông tin
+              NGOÀI tài liệu khi có ích — như giá tham khảo, mức độ phổ biến, đánh giá
+              chung — nhưng đừng nhầm lẫn nó với dữ kiện in trên tài liệu.
             - Giọng văn thân thiện, chuyên nghiệp, đi thẳng vào điều người dùng quan tâm.
               Không nhắc lại đề bài, không rào đón dài dòng.
+
+            {{SearchGuidance}}
 
             {{instr}}
 
@@ -96,13 +137,15 @@ public static class Prompts
               • Dữ kiện RIÊNG của tài liệu này (con số, thành phần, tên, ngày tháng… in
                 trên ảnh): chỉ bám theo những gì OCR có, KHÔNG bịa thêm.
               • Kiến thức chung về loại sản phẩm/đối tượng: được dùng thoải mái.
-            - Với giá cả và các con số thay đổi theo thời gian: trả lời dạng KHOẢNG
-              ("khoảng…", "tầm…") và lưu ý giá có thể đã thay đổi tuỳ nơi bán & thời
-              điểm; đừng khẳng định một con số chính xác như thể vừa tra cứu realtime.
+            - Với giá cả và các con số thay đổi theo thời gian: nếu tra cứu được thì
+              dùng số liệu tra được và nói rõ nguồn; nếu không tra cứu thì trả lời dạng
+              KHOẢNG ("khoảng…", "tầm…") và lưu ý có thể đã thay đổi tuỳ nơi bán & thời điểm.
             - Nếu thật sự không biết, hãy nói thật thay vì bịa.
             - Được dùng Markdown nhẹ (in đậm, gạch đầu dòng) cho dễ đọc; KHÔNG bọc trong
               khối ``` hay JSON.
             - Giữ giọng tự nhiên, gần gũi.
+
+            {{SearchGuidance}}
 
             ===== LỊCH SỬ CUỘC TRÒ CHUYỆN =====
             {{convo}}
@@ -132,9 +175,10 @@ public static class Prompts
             người dị ứng, người có bệnh nền, người đang lái xe/vận hành máy…).
 
             ## Giá & đánh giá tham khảo
-            Nếu nhận ra sản phẩm, nêu KHOẢNG giá phổ biến trên thị trường và đánh giá/
-            mức độ ưa chuộng chung (dựa trên kiến thức nền). Nói rõ đây là tham khảo,
-            giá có thể đã thay đổi tuỳ nơi bán & thời điểm; KHÔNG bịa con số chính xác.
+            Nếu nhận ra sản phẩm, nêu giá phổ biến trên thị trường và đánh giá/mức độ
+            ưa chuộng chung. Đây là mục NÊN tra cứu (giá đổi liên tục): tra được thì
+            dùng số liệu thật kèm nguồn; không tra được thì nói KHOẢNG dựa trên kiến
+            thức nền và ghi rõ là ước lượng. KHÔNG bịa con số chính xác.
             Bỏ qua mục này nếu không đủ tự tin nhận diện sản phẩm.
 
             ## Lời khuyên

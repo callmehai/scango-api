@@ -6,7 +6,8 @@ public record SettingsSnapshot(
     bool OcrMock,
     bool TtsMock,
     int FreeWeeklyScans,
-    int FreeWeeklyAsks);
+    int FreeWeeklyAsks,
+    bool SearchGrounding);
 
 /// <summary>
 /// Process-wide cache of admin-editable runtime settings (AI model + mock
@@ -23,7 +24,8 @@ public class RuntimeSettings
         OcrMock: true,
         TtsMock: false,
         FreeWeeklyScans: 3,
-        FreeWeeklyAsks: 5);
+        FreeWeeklyAsks: 5,
+        SearchGrounding: true);
 
     public SettingsSnapshot Current => _current;
 

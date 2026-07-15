@@ -33,8 +33,11 @@ public class MockGeminiService : IGeminiService
     public async IAsyncEnumerable<string> StreamAsync(
         string prompt,
         UsageBox usage,
+        string targetLang,
         [EnumeratorCancellation] CancellationToken ct)
     {
+        _ = targetLang;   // mock không tra cứu nên không có mục nguồn để dịch
+
         // Title line first (extracted by TitleExtractor, stripped from the bubble).
         yield return "TITLE: [DEMO] Phản hồi giả lập\n\n";
 

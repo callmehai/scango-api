@@ -19,6 +19,10 @@ public class AppSetting
     // Defaults false because GoogleTtsService degrades gracefully without a key.
     public bool TtsMock { get; set; } = false;
 
+    // Đưa tool Google Search cho Gemini để nó tự tra cứu & trích nguồn khi cần.
+    // Mặc định BẬT. Tắt nếu muốn cắt phí grounding (tính theo lượt tra cứu).
+    public bool SearchGrounding { get; set; } = true;
+
     // Free-tier quota per ISO week (admin-editable).
     public int FreeWeeklyScans { get; set; } = 3;
     public int FreeWeeklyAsks { get; set; } = 5;

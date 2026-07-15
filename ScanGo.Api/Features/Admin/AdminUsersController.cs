@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using ScanGo.Api.Common;
 using ScanGo.Api.Database;
 using ScanGo.Api.Database.Entities;
+using ScanGo.Api.Features.Ai;
 using ScanGo.Api.Features.Auth;
 using ScanGo.Api.Features.Billing;
 using ScanGo.Api.Features.Metering;
@@ -165,8 +166,11 @@ public class AdminUsersController(
 
         var input = agg?.Input ?? 0;
         var output = agg?.Output ?? 0;
-        // Rough estimate using gemini-2.5-flash-lite rates (~$0.10/1M in, $0.40/1M out).
-        var estCostUsd = Math.Round(input / 1_000_000.0 * 0.10 + output / 1_000_000.0 * 0.40, 4);
+        // Ước tính theo giá của model ĐANG chọn (bảng giá ở ModelPricing), thay vì
+        // cứng một model — đổi model trong Admin là con số này đổi theo.
+        var model = settings.Current.GeminiModel;
+        var price = ModelPricing.For(model);
+        var estCostUsd = Math.Round(ModelPricing.EstimateUsd(model, input, output), 4);
 
         return Ok(new
         {
@@ -179,7 +183,10 @@ public class AdminUsersController(
             totalInputTokens = input,
             totalOutputTokens = output,
             estimatedGeminiCostUsd = estCostUsd,
-            costNote = "Ước tính theo giá gemini-2.5-flash-lite (~$0.10/1M in, $0.40/1M out) — chỉ tham khảo.",
+            costNote =
+                $"Ước tính theo giá {model} (~${price.InputPerMTok:0.##}/1M in, " +
+                $"${price.OutputPerMTok:0.##}/1M out) — chỉ tham khảo, chưa gồm phí " +
+                $"Google Search grounding (~${ModelPricing.GroundingPer1KUsd(model):0.##}/1k lượt tra cứu sau phần miễn phí).",
         });
     }
 

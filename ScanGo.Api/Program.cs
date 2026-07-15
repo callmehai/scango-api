@@ -285,6 +285,7 @@ using (var scope = app.Services.CreateScope())
             TtsMock = tts.Mock || string.IsNullOrWhiteSpace(tts.GoogleApiKey),
             FreeWeeklyScans = cfg.GetValue("Quota:FreeWeeklyScans", 3),
             FreeWeeklyAsks = cfg.GetValue("Quota:FreeWeeklyAsks", 5),
+            SearchGrounding = ai.SearchGrounding,
             UpdatedAt = DateTime.UtcNow,
         };
         db.AppSettings.Add(row);
@@ -292,7 +293,7 @@ using (var scope = app.Services.CreateScope())
     }
     runtime.Set(new SettingsSnapshot(
         row.GeminiModel, row.AiMock, row.OcrMock, row.TtsMock,
-        row.FreeWeeklyScans, row.FreeWeeklyAsks));
+        row.FreeWeeklyScans, row.FreeWeeklyAsks, row.SearchGrounding));
 }
 
 // ============================================================================

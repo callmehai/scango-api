@@ -8,10 +8,13 @@ public interface IGeminiService
     /// Streams completion chunks. Caller should `await foreach`. The last
     /// "completion" tracker may surface via Usage once the stream finishes,
     /// readable via UsageObserver passed in.
+    /// <paramref name="targetLang"/> = ngôn ngữ câu trả lời (mã kiểu "vnm"), dùng
+    /// để dịch tiêu đề mục nguồn khi model có tra cứu web.
     /// </summary>
     IAsyncEnumerable<string> StreamAsync(
         string prompt,
         UsageBox usage,
+        string targetLang,
         CancellationToken ct);
 }
 
